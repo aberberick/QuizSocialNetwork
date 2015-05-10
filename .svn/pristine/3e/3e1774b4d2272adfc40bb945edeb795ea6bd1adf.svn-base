@@ -1,0 +1,45 @@
+package user;
+
+import static org.junit.Assert.*;
+
+import java.sql.SQLException;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import message.*;
+import database.*;
+import quiz_system.*;
+
+
+
+public class UserTest {
+	private DBConnection db;
+	private UserManager um;
+	private Mailman mm;
+	private QuizManager qm;
+
+	@Before
+	public void initializeTests() throws SQLException{
+			db = new DBConnection();
+    		um = new UserManager(db, null, null);
+    		mm = new Mailman(db, um, null);
+    		qm= new QuizManager(db.getDBConnection(), um);
+    		um.setAttributes(mm, qm);
+    		mm.setAttributes(qm);
+	}
+	
+	@Test
+	public void testQuizManagerCreate(){
+		assert(qm.getNumQuizzes() == 0);
+	}
+	
+	
+	
+	@After
+		public void destroyTests() throws SQLException{
+		um.deleteEverything();	
+		db.closeConection();
+	}	
+	
+}

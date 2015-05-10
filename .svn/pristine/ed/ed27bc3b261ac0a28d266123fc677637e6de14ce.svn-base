@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en-US">
+
+<%@ page import="java.util.*"%>
+
+<%@ page import="user.User"%>
+
+<%@ page import="user.UserManager"%>
+<%@ page import="message.Mailman"%>
+<%@ page import="message.FriendRequest"%>
+<%@ page import="message.ChallengeRequest"%>
+<%@ page import="message.Message"%>
+<%@ page import="system.SystemManager"%>
+<%@ page import="quiz_system.QuizManager"%>
+<%@ page import="quiz_system.Quiz"%>
+
+<head>
+<title>TST Quiz Website Homepage</title>
+<!--  Meta Data -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<!--  Bootstrap CSS -->
+<!-- Latest compiled and minified CSS -->
+<link rel="stylesheet"
+	href="//netdna.bootstrapcdn.com/bootstrap/3.0.2/css/bootstrap.min.css">
+
+<!-- Optional theme -->
+<link rel="stylesheet"
+	href="//netdna.bootstrapcdn.com/bootstrap/3.0.2/css/bootstrap-theme.min.css">
+
+<!-- Latest compiled and minified JavaScript -->
+<script
+	src="//netdna.bootstrapcdn.com/bootstrap/3.0.2/js/bootstrap.min.js"></script>
+</head>
+
+<body>
+
+<div class="jumbotron">
+<div class="container">
+
+<h1>Home</h1>
+<% 
+SystemManager sm = (SystemManager)application.getAttribute("sm");
+User user = (User)session.getAttribute("signedInUser"); 
+Mailman mailMan=sm.getMailman();
+//int numMessages=(mailMan.getFriendRequests(user).size() + mailMan.getChallenges(user).size() + mailMan.getTextMessages(user).size());
+
+	ArrayList<User> friendList=user.getFriendList();
+	ArrayList<FriendRequest> friendRequests = mailMan.getFriendRequests(user); 
+	ArrayList<Message> messages = mailMan.getTextMessages(user); 
+	ArrayList<ChallengeRequest> challengeRequests = mailMan.getChallengeRequests(user); 
+	int numMessages = friendRequests.size() + messages.size() + challengeRequests.size();
+%>
+
+<p>User name: <%=user.getUserName() %> <br>
+<a href="inbox.jsp"> Inbox (<%=numMessages %>)</a> <br>
+Friend List:
+<ul>
+	<% for(int i=0; i<friendList.size(); i++) { 
+		String friendUserName=friendList.get(i).getUserName();
+	%><li><a href="FriendHomeServlet?name=<%= friendUserName %>">
+	<%= friendUserName %></a> <%} %>
+	
+</ul>
+</p>
+
+
+
+
+
+<p>Recent Quizzes: <!--<ul>
+<% QuizManager quizManager=sm.getQuizManager();
+long currentTime=System.currentTimeMillis();
+ArrayList<Quiz> recentQuizzes= quizManager.getRecentlyCreatedQuizzes(currentTime);
+for(int i=0; i<recentQuizzes.size() && i<10; i++) {
+	String quizName=recentQuizzes.get(i).getName();
+	%> <li> <a href="QuizServlet?name=<%= quizName %>"> <%= quizName %></a>
+<% }
+
+
+%>
+</ul>
+--><br>
+<a href="createQuiz.jsp"> Create a Quiz</a>
+<br>
+
+</p>
+
+</div>
+</div>
+</body>
+</html>

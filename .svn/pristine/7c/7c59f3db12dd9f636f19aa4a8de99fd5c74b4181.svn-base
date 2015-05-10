@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en-US">
+
+<%@ page import="java.util.*"%>
+
+
+<%@ page import="user.*"%>
+<%@ page import="message.*"%>
+<%@ page import="system.SystemManager"%>
+<%@ page import="quiz_system.QuizManager"%>
+<%@ page import="quiz_system.Quiz"%>
+
+<head>
+<title>TST Quiz Website Homepage</title>
+<%@include file="refBootstrap.jsp" %>
+</head>
+
+<body>
+<%@include file="refNavbar.jsp" %>
+<div class="jumbotron">
+<div class="container">
+
+<h1>Home</h1>
+<%
+SystemManager sm = (SystemManager)application.getAttribute("sm");
+User user = (User)session.getAttribute("signedInUser"); 
+Mailman mailMan=sm.getMailman();
+QuizManager qm =sm.getQuizManager();
+//int numMessages=(mailMan.getFriendRequests(user).size() + mailMan.getChallenges(user).size() + mailMan.getTextMessages(user).size());
+
+	ArrayList<User> friendList=user.getFriendList();
+	
+	int numFriendRequests=mailMan.getFriendRequests(user).size();
+	int numChallengeRequests=mailMan.getChallengeRequests(user).size();
+	int numTextMessages=mailMan.getTextMessages(user).size();
+	int numMessages = numFriendRequests + numChallengeRequests + numTextMessages;
+	
+	QuizManager quizManager=sm.getQuizManager();
+	long currentTime=System.currentTimeMillis();
+	ArrayList<Quiz> recentQuizzes= quizManager.getRecentlyCreatedQuizzes(currentTime);
+	ArrayList<Quiz> popularQuizzes= quizManager.getMostPopularQuizzes(currentTime);
+	ArrayList<Announcement> announcements = mailMan.getAnnouncements();
+	ArrayList<Quiz> recentlyMadeQuizzesUser = qm.getQuizzesCreatedByUser(user);
+
+%>
+
+<p>User name: <a href="UserServlet?name=<%= user.getUserName() %>" > <%= user.getUserName()%></a> <br>
+<a href="inbox.jsp"> Inbox (<%=numMessages %>)</a> <br>
+Friend List:
+<ul>
+	<% for(int i=0; i<friendList.size(); i++) { 
+		String friendUserName=friendList.get(i).getUserName();
+	%><li><a href="UserServlet?name=<%= friendUserName %>">
+	<%= friendUserName %></a> <%} %>
+	
+</ul>
+</p>
+
+<%if(announcements.size()>0) {%>
+	 Announcements:
+	 <br>
+	 <ul>
+<% 	for(int i=0; i<announcements.size(); i++) {%>
+	<li><%= announcements.get(i).textMessage%>
+	(Sent <%=announcements.get(i).getDate()%>)
+<% 	if(user.isAdmin()) { %>
+	<form action="DeleteMessageServlet" method="post">
+<input type="Submit" value= "Delete" />
+<input name="message" type="hidden" value="<%=announcements.get(i).idCount %>"/> 
+</form>
+<% 	}%>
+	
+	
+	
+<%
+	}
+} %></ul>
+<p> 
+</p>
+
+
+
+
+<p>Recent Quizzes: <ul>
+<% 
+for(int i=0; i<recentQuizzes.size() && i<5; i++) {
+	String quizName=recentQuizzes.get(i).getName();
+	%> <li> <a href="show-quiz.jsp?quizName=<%= quizName %>"> <%= quizName %></a>
+<% }
+
+
+%>
+</ul>
+<p>Popular Quizzes: <ul>
+<% 
+for(int i=0; i<popularQuizzes.size() && i<5; i++) {
+	String quizName=popularQuizzes.get(i).getName();
+	%> <li> <a href="show-quiz.jsp?quizName=<%= quizName %>"> <%= quizName %></a>
+<% }
+
+
+%>
+
+
+
+</ul>
+
+
+<a href="createQuiz0.jsp"> Create a Quiz</a>
+<br>
+<a href="allUsers.jsp"> View all Users</a>
+<br>
+
+<% if(!user.isAdmin()) { %>
+<form action="CreateAdminServlet" method="post">
+<input type="Submit" value= "Become an Administrator" />
+</form>
+<%} else {
+
+	
+%>
+<a href="admin.jsp"> View Admin Page</a>
+<%} if(!user.isPrivate()) {%>
+<form action="SetUserPrivateServlet" method="post">
+<input type="Submit" value= "Set Account as Private" />
+</form>
+<%} else { %>
+<form action="SetUserPublicServlet" method="post">
+<input type="Submit" value= "Set Account as Public" />
+</form>
+<%} %>
+</p>
+
+<p>
+<%if(friendList.size()>0) {
+	Random generator = new Random( 19580427 );
+	int randomIndex = generator.nextInt(friendList.size());
+	User friend = friendList.get(randomIndex);
+	String friendName = friend.getUserName();
+	ArrayList<Achievement>  achievements = friend.getAchievements();
+//	ArrayList<Quiz> quizzesMade = friend.getCreatedQuizes();
+	ArrayList<Quiz> quizzesMade = qm.getQuizzesCreatedByUser(friend);
+
+	ArrayList<Quiz> quizzesTaken = friend.getTakenQuizes();
+	
+
+	%>
+	Quiz here
+	<a href="UserServlet?name=<%= friendName %>" > <%= friendName%></a>'s Recent Activity: <br>
+		<%=friendName %>'s Achievements (<%=achievements.size() %>):
+
+		<ul>
+		<% for(int i=0; i<achievements.size(); i++) {
+			%><li>  <%=achievements.get(i).title %><%
+		
+		}%> 
+		</ul>
+		<%=friendName %>'s Recently Created Quizzes: <br>
+		<ul>
+		<% for(int i=0; i<quizzesMade.size(); i++) {
+			Quiz oneQuiz = quizzesMade.get(i);
+		
+		
+	%><li><a href="show-quiz.jsp?quizName=<%= oneQuiz.getName() %>"><%= oneQuiz.getName() %></a> 
+<%} %>
+</ul>
+<% }%>
+
+
+
+</div>
+</div>
+</body>
+</html>

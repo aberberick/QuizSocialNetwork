@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en-US">
+
+<head>
+<title>TST Quiz Website</title>
+<!--  Meta Data -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<!--  Bootstrap CSS -->
+<!-- Latest compiled and minified CSS -->
+<link rel="stylesheet"
+	href="//netdna.bootstrapcdn.com/bootstrap/3.0.2/css/bootstrap.min.css">
+
+<!--  Optional theme -->
+<link rel="stylesheet"
+	href="//netdna.bootstrapcdn.com/bootstrap/3.0.2/css/bootstrap-theme.min.css">
+
+ <!-- Latest compiled and minified JavaScript  -->
+<script
+	src="//netdna.bootstrapcdn.com/bootstrap/3.0.2/js/bootstrap.min.js"></script>
+</head>
+
+<body>
+	<div class="jumbotron">
+		<div class="container">
+			<h1>
+				Welcome to the REALLY SICK TST Quiz Website!
+			</h1>
+			<p>
+				We at <strong>Team Snow Tiger</strong> have put together a sick quiz website for your education
+				and recreation. We guarantee you'll like it. Login or sign up now!
+			</p>
+			<p>
+			<form action="LoginServlet" method="post">
+			User Name:<br />
+			<input type="text" name="userName">
+			<br />
+			Password:<br />
+			<input type="password" name="password">
+			<br />
+		    <br />
+			<input type="submit" class="btn btn-primary btn-lg" value="Login &raquo;">
+			</form>
+			</p>
+		</div>
+	</div>
+</body>
+</html>

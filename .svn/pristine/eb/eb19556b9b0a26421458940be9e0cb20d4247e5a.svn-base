@@ -1,0 +1,272 @@
+package user;
+
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.HashSet;
+
+import message.*;
+import quiz_system.*;
+import database.*;
+import com.mysql.jdbc.Connection;
+
+
+
+/*The UserManager class is the interface between the person logging in or creating an account,
+ * the database, and an actual user object. The user object is created at each instance of "login"
+ * or "create account." However, when the user creates an account the database is modified to include 
+ * such an account. 
+ * 
+ */
+public class UserManager {
+	
+	private QuizManager qMan;
+	private Connection con;
+	private ResultSet rs;
+	private static MessageDigest digest;
+	private HashSet<String> accountNames;
+	private static final int USERNAME_COL = 0;
+	private static final int SALT_COL = 2;
+	private static final int PASSWORD_COL = 1;
+	private static final int ADMIN_COL=3;
+	private static String userTablePrefix = "USER_";
+	private static Mailman mailman;
+	
+
+	
+	public UserManager(DBConnection connection, Mailman mailman, QuizManager qMan){
+		try {
+			con=connection.getDBConnection();
+			//deleteEverything();
+			createUsersTable();
+			rs=null;
+			this.mailman=mailman;
+			this.qMan=qMan;
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		
+	}
+	
+	private void createUsersTable() throws SQLException {
+		Statement state= con.createStatement();
+		state.executeUpdate("DROP TABLE IF EXISTS users");
+		state.executeUpdate("CREATE TABLE users ("
+				+ "usernames CHAR(64),"
+				+ "passwords CHAR(64),"
+				+ "admins CHAR(64)"
+				+ ");"
+		);
+		
+	}
+
+	/*check to see if account exists in database
+	 * 
+	 */
+	
+	
+	/*
+	 * requires a column in the table with the title "admins" and a column with the 
+	 * title "usernames"
+	 */
+	
+	
+	
+	
+	public void deleteEverything() throws SQLException{
+		
+		HashSet<String> names = getAllUsers();
+		for(String name: names){
+			mailman.removeMessagesForUser(getExistingUser(name));
+			removeUser(name);
+			
+		}
+		if(mailman!=null){
+		mailman.deleteMailman();
+		}
+		deleteUsersTable();
+		qMan.delete();
+
+	}
+		
+		
+		
+	
+	
+	
+	public void deleteUsersTable() throws SQLException {
+		Statement state = con.createStatement();
+		state.executeUpdate("DROP TABLE IF EXISTS users;");
+
+	}
+
+	public void removeUser(String username) throws SQLException{
+		Statement state = con.createStatement();
+		User user = getExistingUser(username);
+		if(mailman!=null){
+		mailman.removeMessagesForUser(user);
+		}
+		state.executeUpdate("DELETE FROM users WHERE usernames=\""+username+"\";");
+		state.executeUpdate("DROP TABLE IF EXISTS USER_"+username+";");
+	}
+	
+	
+	public void makeAdmin(String username) throws SQLException{
+		Statement state = con.createStatement();
+		state.executeUpdate("UPDATE users SET admins=\"true\" WHERE usernames= \""+username+"\";");
+		
+	}
+	
+	
+	public boolean isAdmin(String username) throws SQLException{
+		Statement state = con.createStatement();
+		rs=state.executeQuery("SELECT * FROM users WHERE usernames= \""+username+"\";");
+		if(rs.next()){
+			String adminValue=rs.getString(ADMIN_COL);
+			return adminValue.equals("true");
+		}
+		return false;
+	}
+	
+	public boolean isUserNameAvailable(String username) throws SQLException{
+		Statement state = con.createStatement();
+		accountNames=dbGenerateAccountNames(state);
+		if(accountNames.contains(username))return false;
+		else return true;
+	}
+	
+	//generates a set of all names from the database column title 'usernames'
+	private HashSet<String> dbGenerateAccountNames(Statement state) throws SQLException {
+		HashSet<String> names = new HashSet<String>();
+		rs=state.executeQuery("SELECT usernames FROM users;");
+		while(rs.next()){
+			String name=rs.getString("usernames");
+			names.add(name);
+			
+		}
+		
+		return names;
+	}
+
+	/*The create user method is designed to be used in conjunction with the accountTakenBoolean
+	 * 
+	 */
+	public User createUser(String username, String password) throws NoSuchAlgorithmException, SQLException{
+		createNewUserInDB(username,password);
+		User user = new User(username, con, this, qMan);
+		return user;
+	}
+	
+	/* The getExitingUser method is designed to be used in conjunction with the
+	 * checkPassWord boolean.
+	 * 
+	 */
+	public User getExistingUser(String username) throws SQLException{
+		User user = new User(username, con, this, qMan);
+		return user;
+	}
+	
+	
+		
+		
+		
+		
+	
+	
+	
+	
+	
+	/*
+	 * requires a columns with the name "passwords"
+	 * 
+	 * salt is a constant value associated with the username (first char in username)
+	 */
+	public boolean isPasswordValid(String username, String password) throws NoSuchAlgorithmException, SQLException{
+		char salt = username.charAt(0);
+		String hashWord=encrypt(salt+password);
+		Statement state=con.createStatement();
+		rs=state.executeQuery("SELECT * FROM users WHERE usernames =\""+username+"\";");
+		if(rs.next()) {
+			String actualHash = rs.getString("passwords"); 
+			if (hashWord.equals(actualHash))return true;
+		}
+		
+		return false;
+	}
+	
+	
+	/*This method should create a new row in the users table and additionally create a new table titled with the user's name.
+	 * If a user later successfully logs in, they will be redirected to this user table through a new instance of a new user object.
+	 * 
+	 *  salt is a constant value associated with the username (first char in username)
+	 * 
+	 */
+	private void createNewUserInDB(String username, String password) throws NoSuchAlgorithmException, SQLException {
+		Statement state = (Statement) con.createStatement();
+		char salt = username.charAt(0);
+		String hashWord=encrypt(salt+password);
+		state.executeUpdate("INSERT INTO users VALUES (\""+username+"\",\""+hashWord+"\",\"false\");");
+		state.executeUpdate("DROP TABLE IF EXISTS "+username+";");
+		state.executeUpdate("CREATE TABLE "+userTablePrefix+username+" ("//ALWAYS USE USER_ prefix for table name
+				+ "friends CHAR(64),"
+				+ "achievements CHAR(64)"
+				+ ");"
+		);
+	}
+
+
+	private static String hexToString(byte[] bytes) {
+		StringBuffer buff = new StringBuffer();
+		for (int i=0; i<bytes.length; i++) {
+			int val = bytes[i];
+			val = val & 0xff;  // remove higher bits, sign
+			if (val<16) buff.append('0'); // leading 0
+			buff.append(Integer.toString(val, 16));
+		}
+		return buff.toString();
+	}
+	
+	public Connection getConnection(){
+		return con;
+	}
+	
+	public void closeConnection() throws SQLException{
+		con.close();
+	}
+	
+	public HashSet<String> getAllUsers() throws SQLException{
+		Statement state=con.createStatement();
+		return dbGenerateAccountNames(state);
+	}
+
+	private String encrypt(String saltyPassword) throws NoSuchAlgorithmException {
+			digest=MessageDigest.getInstance("SHA");
+			byte[] passwordBytes = saltyPassword.getBytes();
+			digest.update(passwordBytes);
+			byte[] hashWord = digest.digest();
+			String hashCode = hexToString(hashWord);
+			return hashCode;
+			
+		}
+
+	public void changePassword(String username, String newPassword) throws SQLException, NoSuchAlgorithmException {
+		Statement state = (Statement) con.createStatement();
+		char salt = username.charAt(0);
+		String hashWord=encrypt(salt+newPassword);
+		state.executeUpdate("UPDATE users SET passwords= \""+hashWord+"\" WHERE usernames = \""+username+"\";" );
+	}
+
+	public void setAttributes(Mailman mailman, QuizManager quizManager) {
+		this.mailman=mailman;
+		qMan=quizManager;
+		
+	}
+		
+		
+	
+}
+

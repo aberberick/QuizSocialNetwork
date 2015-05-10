@@ -1,0 +1,67 @@
+package quiz_system;
+
+import java.util.ArrayList;
+
+public enum QuestionType {	
+	/*-------------------------- ENUMERATION TYPES -------------------------------------*/
+	RESPONSE ("Response"),
+	FILL_IN_THE_BLANK ("Fill In the Blank"), 
+	MULTIPLE_CHOICE ("Multiple Choice"),
+	PICTURE_RESPONSE ("Picture Response"),
+	MULTIPLE_ANSWER ("Multiple Answer"),
+	MULTIPLE_CHOICE_ANSWER ("Multiple Choice Multiple Answer"),
+	GRADED ("Graded Response"),
+	NONE ("No Question Type");
+	/*-------------------------- END ENUMERATION TYPES ---------------------------------*/
+	
+	
+	/*-------------------------- PRIVATE INSTANCE VARIABLES ----------------------------*/
+	private String description;
+	/*-------------------------- END PRIVATE INSTANCE VARIABLES ------------------------*/
+	
+	
+	/*-------------------------- CONSTRUCTOR -------------------------------------------*/
+	QuestionType(String str){
+		description = str;
+	}
+	/*-------------------------- END CONSTRUCTOR ---------------------------------------*/
+	
+	
+	/*-------------------------- PUBLIC FUNCTIONS --------------------------------------*/
+	public String toString(){
+		return description;
+	}
+	
+	
+	/**
+	 * Given a String returns the correct question type, null if no match found
+	 * @param str
+	 * @return
+	 */
+	public static QuestionType fromString(String str){
+		for(QuestionType q: QuestionType.values()){
+			if(q.description.equals(str)){
+				return q;
+			}
+		}
+		return null;
+	}
+	
+	
+	/**
+	 * Returns an ArrayList of all the QuestionTypes
+	 * @return
+	 */
+	public static ArrayList<QuestionType> getAll(){
+		ArrayList<QuestionType> list = new ArrayList<QuestionType>();
+		for(QuestionType q: QuestionType.values()){
+			list.add(q);
+		}
+		return list;
+	}
+	/*-------------------------- END PUBLIC FUNCTIONS ----------------------------------*/
+}
+
+
+
+

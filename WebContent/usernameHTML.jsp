@@ -1,0 +1,5 @@
+<p><code>
+Current user: 
+
+<a href="show-user.jsp?id=<%= session.getAttribute("signedInUserName")%>"><%= session.getAttribute("signedInUserName")%></a>
+</code></p>

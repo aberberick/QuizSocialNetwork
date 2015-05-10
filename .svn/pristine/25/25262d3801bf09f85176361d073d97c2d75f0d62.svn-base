@@ -1,0 +1,277 @@
+package quiz_system;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.Date;
+import com.mysql.jdbc.Connection;
+import com.mysql.jdbc.Statement;
+
+import database.DBConstants;
+
+
+public class Question extends Object{
+
+	/*-------------------------- CONSTANTS ---------------------------------------------*/
+	public static final String DEFAULT_PROMPT = "No Prompt Entered";
+	public static final int	DEFAULT_TIME_TO_TAKE = 100000; //100 Seconds
+	public static final String DEFAULT_PICTURE_PATH = "No path entered";
+	public static final String DEFAULT_SOLUTION = "No Solution Entered";
+	public static final String DEFAULT_CHOICE = "Only one choice";
+	public static final boolean DEFAULT_IS_ORDERED = true;
+	
+	public static final int MAX_GRADE = 10;
+	public static final int MIN_GRADE = 0;
+	public static final int DEFAULT_GRADE = -1;
+	/*-------------------------- END CONSTANTS -----------------------------------------*/
+	
+	
+	/*-------------------------- PRIVATE INSTANCE VARIABLES ----------------------------*/
+	protected Connection con;
+	protected Statement state;
+	
+	protected String questionName;
+	protected String parentQuizName;
+	/*-------------------------- END PRIVATE INSTANCE VARIABLES ------------------------*/
+	
+	
+	/*-------------------------- CONSTRUCTOR/ OVERRIDEN FUNCTIONS ----------------------*/
+	protected Question(Connection connection, String questionName, QuestionType type, String parentQuizName){
+		this.con = connection;
+		this.questionName = questionName;
+		this.parentQuizName = parentQuizName;
+		
+		initializeQuestionTables();
+		setType(type);
+		
+	}
+	@Override
+	public boolean equals(Object other){
+		Question otherQ = (Question) other;
+		if(otherQ == this) return true;
+		if(otherQ.questionName.equals(questionName) && otherQ.parentQuizName.equals(parentQuizName)){
+			return true;
+		}
+		return false;
+	}
+	@Override
+	public String toString(){
+		String str = "";
+		str += "Question Name = " + questionName + ", ";
+		str += "Question Type = " + getQuestionType().toString() + ", ";
+		str += "Prompt = " + getPrompt(); 
+		return str;
+	}
+	public String choicesToString(){
+		String str = "";
+		/*
+		 * TODO
+		 */
+		return str;
+	}
+	public String solutionsToString(){
+		String str = "";
+		/*
+		 * TODO:
+		 */
+		return str;
+	}
+	/*-------------------------- END CONSTRUCTOR/ OVERRIDEN FUNCTIONS ------------------*/
+	
+	
+	/*-------------------------- PUBLIC FUNCTIONS --------------------------------------*/
+	public QuestionType getQuestionType(){
+		
+		QuestionType type = QuestionType.NONE;
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "SELECT * FROM " + DBConstants.TP_QUIZ + parentQuizName + " ";
+			cmd += "WHERE " + DBConstants.T_QUIZ_C_QUESTIONS + " = ";
+			cmd += "\"" + questionName + "\" ";
+			cmd += ";";
+			
+			ResultSet rs = state.executeQuery(cmd);
+			if(rs.next()){
+				type = QuestionType.fromString(rs.getString(DBConstants.T_QUIZ_C_TYPE));
+			}
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+		return type;
+	}
+	public String getName(){
+		return questionName;
+	}
+	public String getPrompt(){
+		String prompt = DEFAULT_PROMPT;
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "SELECT * FROM " + DBConstants.TP_QUIZ + parentQuizName + " ";
+			cmd += "WHERE " + DBConstants.T_QUIZ_C_QUESTIONS + " = ";
+			cmd += "\"" + questionName + "\" ";
+			cmd += ";";
+			
+			ResultSet rs = state.executeQuery(cmd);
+			if(rs.next()){
+				prompt = rs.getString(DBConstants.T_QUIZ_C_PROMPT);
+			}
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+		return prompt;
+	}
+	public void setPrompt(String prompt){
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "UPDATE " + DBConstants.TP_QUIZ + parentQuizName + " ";
+			cmd += "SET " + DBConstants.T_QUIZ_C_PROMPT + " = ";
+			cmd += "\"" + prompt +"\" ";
+			cmd += "WHERE " + DBConstants.T_QUIZ_C_QUESTIONS + " = ";
+			cmd += "\"" + questionName + "\"";
+			cmd += ";";
+			state.execute(cmd);
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+	}
+	public long getTimeToTake(){
+		long timeToTake = DEFAULT_TIME_TO_TAKE;
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "SELECT * FROM " + DBConstants.TP_QUIZ + parentQuizName + " ";
+			cmd += "WHERE " + DBConstants.T_QUIZ_C_QUESTIONS + " = ";
+			cmd += "\"" + questionName + "\" ";
+			cmd += ";";
+			
+			ResultSet rs = state.executeQuery(cmd);
+			if(rs.next()){
+				timeToTake = rs.getLong(DBConstants.T_QUIZ_C_TIME);
+			}
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+		return timeToTake;
+	}
+	public void setTimeToTake(long time){
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "UPDATE " + DBConstants.TP_QUIZ + parentQuizName + " ";
+			cmd += "SET " + DBConstants.T_QUIZ_C_TIME + " = ";
+			cmd += " " + Long.toString(time) +" ";
+			cmd += "WHERE " + DBConstants.T_QUIZ_C_QUESTIONS + " = ";
+			cmd += "\"" + questionName + "\"";
+			cmd += ";";
+			state.execute(cmd);
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+	}
+	/*-------------------------- END PUBLIC FUNCTIONS ----------------------------------*/
+	
+	
+	/*-------------------------- PROTECTED FUNCTIONS -----------------------------------*/
+	protected void setType(QuestionType type){
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "UPDATE " + DBConstants.TP_QUIZ + parentQuizName + " ";
+			cmd += "SET " + DBConstants.T_QUIZ_C_TYPE + " = ";
+			cmd += "\"" + type.toString() + "\" ";
+			cmd += "WHERE " + DBConstants.T_QUIZ_C_QUESTIONS + " = ";
+			cmd += "\"" + questionName + "\"";
+			cmd += ";";
+			state.execute(cmd);
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+	}
+	/**
+	 * Removes all question tables. Does not remove question name from quiz table.
+	 * This must be done by calling quiz.remove(question);
+	 */
+	protected void remove(){
+		removeQuestionTables();
+	}
+	/*-------------------------- END PROTECTED FUNCTIONS -------------------------------*/
+	
+	
+	/*-------------------------- TABLE CREATOR/DESTRUCTOR FUNCTIONS --------------------*/
+	private void initializeQuestionTables(){
+		initializeQuestionChoicesTable();
+		initializeQuestionSolutionsTable();
+	}
+	private void removeQuestionTables(){
+		removeQuestionChoicesTable();
+		removeQuestionSolutionsTable();
+	}
+	private void initializeQuestionChoicesTable(){
+		boolean tableExists = false;
+		
+		//If table doesn't exist, create table
+		if(!tableExists){
+			try{
+				state = (Statement) con.createStatement();	
+				String cmd = "";
+				cmd += "CREATE TABLE IF NOT EXISTS ";
+				cmd += DBConstants.TP_QCHOICES + parentQuizName + questionName;
+				cmd += " (";
+				cmd += DBConstants.T_QCHOICES_C_CHOICES + " " + DBConstants.SQL_LONG_STRING + " ";
+				cmd += ");";
+				state.execute(cmd);				
+			}catch(SQLException ex){
+				ex.printStackTrace();
+			}	
+		}
+	}
+	private void removeQuestionChoicesTable(){
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "DROP TABLE ";
+			cmd += DBConstants.TP_QCHOICES + parentQuizName + questionName;
+			cmd += ";";
+			
+			state.execute(cmd);
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+	}
+	private void initializeQuestionSolutionsTable(){
+		boolean tableExists = false;
+		
+		//If table doesn't exist, create table
+		if(!tableExists){
+			try{
+				state = (Statement) con.createStatement();	
+				String cmd = "";
+				cmd += "CREATE TABLE IF NOT EXISTS ";
+				cmd += DBConstants.TP_QSOLUTIONS + parentQuizName + questionName;
+				cmd += " (";
+				cmd += DBConstants.T_QSOLUTIONS_C_CHOICES + " " + DBConstants.SQL_MEDIUM_STRING + ", ";
+				cmd += DBConstants.T_QSOLUTIONS_C_SOLUTIONS + " " + DBConstants.SQL_MEDIUM_STRING + " ";
+				cmd += ");";
+				state.execute(cmd);				
+			}catch(SQLException ex){
+				ex.printStackTrace();
+			}	
+		}
+	}
+	private void removeQuestionSolutionsTable(){
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "DROP TABLE ";
+			cmd += DBConstants.TP_QSOLUTIONS + parentQuizName + questionName;
+			cmd += ";";
+			
+			state.execute(cmd);
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+	}
+	/*-------------------------- END TABLE CREATOR/DESTRUCTOR FUNCTIONS -----------------*/	
+}

@@ -1,0 +1,107 @@
+package user;
+
+import static org.junit.Assert.*;
+
+import java.security.NoSuchAlgorithmException;
+import java.sql.SQLException;
+import java.util.ArrayList;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import message.*;
+import database.*;
+import quiz_system.*;
+
+
+
+public class UserTest {
+	private DBConnection db;
+	private UserManager um;
+	private Mailman mm;
+	private QuizManager qm;
+
+	@Before
+	public void initializeTests() throws SQLException{
+			db = new DBConnection();
+    		um = new UserManager(db, null, null);
+    		mm = new Mailman(db, um, null);
+    		//qm=null;
+    		qm= new QuizManager(db.getDBConnection(), um);
+    		um.setAttributes(mm, qm);
+    		mm.setAttributes(qm);
+    		
+	}
+//	
+	@Test
+	public void testUserManagerCreate() throws NoSuchAlgorithmException, SQLException{
+		User user = um.createUser("Adam", "Alpha");
+		User oUser = um.getExistingUser("Adam");
+		assertTrue(um.isPasswordValid("Adam", "Alpha"));
+		assertEquals(user, oUser);
+		assertFalse(um.isUserNameAvailable("Adam"));
+		assertTrue(um.isUserNameAvailable("Andrew"));
+		
+		User sam = um.createUser("Sam", "1234");
+		um.makeAdmin("Sam");
+		assertTrue(um.isAdmin("Sam"));
+		assertFalse(um.isAdmin("Adam"));
+		um.changePassword("Sam", "Hello");
+		assertTrue(um.isPasswordValid("Sam", "Hello"));
+		
+		
+		assertTrue(um.getAllUsers().contains("Sam"));
+		assertTrue(um.getAllUsers().contains("Adam"));
+		assertFalse(um.getAllUsers().contains("Andrew"));
+	}
+	
+	@Test
+	public void testUser() throws NoSuchAlgorithmException, SQLException{
+		User user = um.createUser("Adam", "Hi" );
+		User friend = um.createUser("MyFriend", "!!");
+		user.addFriend(friend.getUserName());
+		assertTrue(user.friendInFriendList(friend.getUserName()));
+		
+		user.addAchievement(Achievement.AMATEUR_AUTHOR);
+		user.addAchievement(Achievement.I_AM_THE_GREATEST);
+		ArrayList<Achievement> ach = user.getAchievements();
+		assertTrue(ach.contains(Achievement.AMATEUR_AUTHOR));
+		assertFalse(ach.contains(Achievement.PROLIFIC_AUTHOR));
+		
+		
+	}
+	
+	
+	@Test
+	public void testMailMan() throws NoSuchAlgorithmException, SQLException{	
+		User user = um.createUser("Adam", "Hi" );
+		User friend = um.createUser("MyFriend", "!!");
+		User alan = um.createUser("Alan", "ee");
+		mm.sendFriendRequest(user, friend, "Hi Friend!");
+		mm.sendFriendRequest(alan, friend, "Hi. It's alan");
+		ArrayList<FriendRequest> friends = mm.getFriendRequests(friend);
+		for(FriendRequest req: friends){
+			req.confirmFriend();
+			System.out.println(req.textMessage);
+			System.out.println(req.date);
+		}
+		ArrayList<User> friendFriends = friend.getFriendList();
+		assertTrue(friendFriends.contains(user));
+		assertTrue(friendFriends.contains(alan));
+		assertTrue(user.friendInFriendList(friend.getUserName()));
+		assertTrue(alan.friendInFriendList(friend.getUserName()));
+		Quiz quiz = qm.createAndAddQuiz(QuizCategory.ART, "ArtQuiz", user);
+		mm.sendChallenge(user, friend, "HI", quiz);
+		
+	}
+	
+	
+	
+	@After
+		public void destroyTests() throws SQLException{
+		um.deleteEverything();
+		db.closeConection();
+		
+	}	
+	
+}

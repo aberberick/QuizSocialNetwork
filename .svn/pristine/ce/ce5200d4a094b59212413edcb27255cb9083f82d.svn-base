@@ -1,0 +1,151 @@
+<%@ page language="java" contentType="text/html; charset=ISO-8859-1"
+    pageEncoding="ISO-8859-1"%>
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<title>Quiz: <%= request.getParameter("id")%></title>
+<%@include file="refBootstrap.jsp" %>
+</head>
+
+<body>
+<%@include file="imports.jsp" %>
+<%@include file="refNavbar.jsp" %>
+
+   <div class="jumbotron">
+       <div class="container">
+            <h1>Quiz: <%= request.getParameter("id")%></h1>
+  
+  <% 
+    // Get Quiz
+    String quizName = request.getParameter("id");
+    SystemManager sm = (SystemManager)application.getAttribute("sm");
+    QuizManager quizManager = sm.getQuizManager();
+    Quiz q = quizManager.getQuiz(quizName);
+    
+    boolean onePage = q.isOnePage();
+    boolean practiceEnabled = q.isPracticeEnabled();
+    boolean randomized = q.isRandomized();
+    boolean timed = q.isTimed();
+    
+    // Display category
+    %>
+    <p>Category: <%= q.getCategory() %><br />
+    <%
+    
+    // Display Tags
+    out.write("Tags: ");
+    HashSet<String> tags = q.getTags();
+    for (String tag : tags) {
+    	out.write(tag + " ");
+    }
+    out.write("<br />");
+    
+    // display description
+    out.write("Description: " + q.getDescription() + "</p>");
+    
+    // display date created
+    out.write("<p><small>");
+    Date d = new Date(q.getDateCreated());
+    SimpleDateFormat df = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss Z");
+    String dText = df.format(d);
+    out.write("Date created: " + dText + "</small></p>");
+    
+    // display options
+    out.write("<p> One page: " + onePage + "; " );
+    out.write("Practice mode: " + practiceEnabled + "; " );
+    out.write("Random order: " + randomized + "; " );
+    out.write("Timed: " + timed + "<br/>");
+    
+    %>
+    </div>
+    </div>
+    <div class="container" width="400px" style="text-align:left;font-size:20px;">
+    <h2>Questions</h2>
+<% 
+//Display Questions
+ArrayList<Question> questions = q.getAllQuestions();
+                        
+if (questions.size() == 0) {
+    out.write("<p>No questions in " + quizName + " at this time.</p>");
+}
+     
+ for (int i = 0; i < questions.size(); i++) {
+     Question que = questions.get(i);
+     QuestionType qt = que.getQuestionType();
+     out.write("<h3>Question #" + i + " [" + qt + "] </h3>");
+     out.write("<p>Name: " + que.getName() + "</p>");
+     out.write("<p>Prompt: " + que.getPrompt() + "</p>");
+     
+     // Response Type
+     if (qt.equals(QuestionType.RESPONSE)) { 
+       ResponseQ rq = (ResponseQ) que;
+       out.write("Solutions: ");
+       HashSet<String> solns = rq.getSolutions();
+       for (String soln : solns) {
+           out.write("<p>" + soln + "</p>");
+       }
+     }    
+     // Fill in the blank
+     else if (qt.equals(QuestionType.FILL_IN_THE_BLANK)) {
+         FillInBlankQ rq = (FillInBlankQ) que;
+         out.write("Solutions: ");
+         HashSet<String> solns = rq.getSolutions();
+         for (String soln : solns) {
+             out.write("<p>" + soln + "</p>");
+         }
+     }
+     // Multiple choice
+       else if (qt.equals(QuestionType.MULTIPLE_CHOICE)) {
+             MultipleChoiceQ rq = (MultipleChoiceQ) que;
+             out.write("Choices: ");
+             HashSet<String> choices = rq.getChoices();
+             for (String choice : choices) {
+                 out.write("<p>" + choice + "</p>");
+             }
+             out.write("Solution hidden.");
+         }
+       else if (qt.equals(QuestionType.PICTURE_RESPONSE)) {
+           PictureResponseQ rq = (PictureResponseQ) que;
+           out.write("<img src=\"" + rq.getPicture() + "\" class=\"img-thumbnail\" width=\"200px\"alt=\"" + rq.getName() + "\">");
+           out.write("<br />Solutions:" + "<br />");
+           HashSet<String> solns = rq.getSolutions();
+             for (String soln : solns) {
+                 out.write("<p>" + soln + "</p>");
+             }
+       }
+       else if (qt.equals(QuestionType.MULTIPLE_ANSWER)) {
+            MultipleAnswerQ rq = (MultipleAnswerQ) que;
+            out.write("Solutions: ");
+             HashSet<String> solns = rq.getSolutions();
+             for (String soln : solns) {
+                out.write("<p>" + soln + "</p>");
+             }
+       }
+       else if (qt.equals(QuestionType.MULTIPLE_CHOICE_ANSWER)) { //multi choice multi answer
+           MultipleChoiceAnswerQ rq = (MultipleChoiceAnswerQ) que;
+           out.write("Choices: ");
+           HashSet<String> choices = rq.getChoices();
+           for (String choice : choices) {
+               out.write("<p>" + choice + "</p>");
+           }
+           out.write("Solutions: ");
+            HashSet<String> solns = rq.getSolutions();
+            for (String soln : solns) {
+               out.write("<p>" + soln + "</p>");
+            }
+       }
+       else if (qt.equals(QuestionType.MATCHING)) { //multi choice multi answer
+           MatchingQ rq = (MatchingQ) que;
+           out.write("Choices: ");
+           String choices = rq.choicesToString();
+               out.write("<p>" + choices + "</p>");
+           out.write("Solutions: ");
+            String solns = rq.solutionsToString();
+               out.write("<p>" + solns + "</p>");
+       }
+ }
+     %>
+     </div>
+</body>
+</html>

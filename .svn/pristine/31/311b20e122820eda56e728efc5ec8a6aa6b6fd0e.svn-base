@@ -1,0 +1,131 @@
+package servlets;
+
+import java.io.IOException;
+import java.sql.SQLException;
+import java.util.ArrayList;
+
+import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import system.SystemManager;
+import user.User;
+import user.UserManager;
+import message.FriendRequest;
+import message.Message;
+import message.Mailman;
+
+/**
+ * Servlet implementation class FriendMRespondServlet
+ */
+@WebServlet("/FriendRequestResponseServlet")
+public class FriendRequestResponseServlet extends HttpServlet {
+	private static final long serialVersionUID = 1L;
+       
+    /**
+     * @see HttpServlet#HttpServlet()
+     */
+    public FriendRequestResponseServlet() {
+        super();
+        // TODO Auto-generated constructor stub
+    }
+
+	/**
+	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
+	 */
+	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		// TODO Auto-generated method stub
+	}
+
+	/**
+	 * @see HttpServlet#doPost(HttpServletRequest request, HttpServletResponse response)
+	 */
+	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		//message should be true or false
+		//TODO: Change access to Usermanager
+		
+		ServletContext context=request.getServletContext();
+		HttpSession session=request.getSession();
+		SystemManager sm = (SystemManager)context.getAttribute("sm");
+		UserManager um = sm.getUserManager();
+		Mailman mailMan = sm.getMailman();
+		User receiver=(User)session.getAttribute("signedInUser");
+		String senderName=request.getParameter("sender");
+		
+		try {
+			User sender = um.getExistingUser(senderName);
+			ArrayList<FriendRequest> friendRequests = mailMan.getFriendRequests(receiver);
+			String [] friendRequestResponses=request.getParameterValues("response");
+			String responseString = request.getParameter("response");
+			if(responseString.equals("ignore")) {
+				//nothing
+			}
+			else {
+				for(int i=0; i<friendRequests.size(); i++) {
+					if(friendRequests.get(i).sender.equals(sender)) {
+						if(responseString.equals("accept")) {
+							friendRequests.get(i).confirmFriend();
+						}
+						else if(responseString.equals("deny")) {
+							friendRequests.get(i).rejectFriend();
+						}
+					}
+				}
+			}
+			
+			
+//			for(int i=0; i<friendRequestResponses.length; i++) {
+//				if(friendRequestResponses[i].equals("accept")) {
+//					friendRequests.get(i).confirmFriend();
+//				}
+//				else if (friendRequestResponses[i].equals("deny")) {
+//					friendRequests.get(i).rejectFriend();
+//				}
+//				else if(friendRequestResponses[i].equals("ignore")) {
+//					
+//				}
+//				
+//			}
+			
+
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+				
+//		String senderString= request.getParameter("sender");
+//		
+//		try {
+//			User sender = um.getExistingUser(senderString);
+//			String accept=request.getParameter("isAccepted");
+//			
+//			String text="";
+//			Mailman mailMan=(Mailman)context.getAttribute("mailMan");
+////			mailMan.
+//
+//		} catch (SQLException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
+		//		mailMan.createAndSentFriendRequest()
+		
+		//hiii hiii  hiii
+		///		/// create message through the mailbox
+
+//		FriendRequest friendMessage=new FriendRequest(Mailman.FRIEND_REQUEST(), sender, reciever, text);
+//		if(accept.equals("true")) {
+//			friendMessage.confirmFriend();
+//		}
+//		else {
+////			friendMessage.deny();
+//		}
+		RequestDispatcher dispatch = request.getRequestDispatcher("friendRequests.jsp"); 
+		dispatch.forward(request, response); 
+	}
+
+}

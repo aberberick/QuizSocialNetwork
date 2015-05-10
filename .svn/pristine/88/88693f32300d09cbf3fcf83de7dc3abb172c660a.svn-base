@@ -1,0 +1,113 @@
+package quiz_system;
+
+import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+
+import com.mysql.jdbc.Connection;
+import com.mysql.jdbc.Statement;
+
+import database.DBConstants;
+
+public class MultipleAnswerQ extends Question{
+	
+	/*
+	 * Note:
+	 * Choice Table - holds nothing
+	 * Solutions Table: Choices Column - holds a string corresponding to the order number of the solution
+	 * Solutions Table: Solutions Column - holds the string corresponding to the solution of the order number
+	 */
+	
+	/*-------------------------- CONSTRUCTOR -------------------------------------------*/
+	protected MultipleAnswerQ(Connection connection, String questionName, String parentQuizName) {
+		super(connection, questionName, QuestionType.MULTIPLE_ANSWER, parentQuizName);
+	}
+	/*-------------------------- END CONSTRUCTOR ---------------------------------------*/
+	
+	
+	/*-------------------------- PUBLIC FUNCTIONS --------------------------------------*/
+	public boolean isOrdered(){
+		boolean isOrdered = DEFAULT_IS_ORDERED;
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "SELECT " + DBConstants.T_QUIZ_C_ORDERED + " ";
+			cmd += "FROM " + DBConstants.TP_QUIZ + parentQuizName + " ";
+			cmd += "WHERE " + DBConstants.T_QUIZ_C_QUESTIONS + " = ";
+			cmd += "\"" + questionName + "\"";
+			cmd += ";";
+			
+			rs = state.executeQuery(cmd);
+			if(rs.next()){
+				isOrdered = rs.getBoolean(DBConstants.T_QUIZ_C_ORDERED);
+			}
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+		return isOrdered;
+	}
+	public void setOrdered(boolean isOrdered){
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "UPDATE " + DBConstants.TP_QUIZ + parentQuizName + " ";
+			cmd += "SET " + DBConstants.T_QUIZ_C_ORDERED + " = ";
+			cmd += " " + Boolean.toString(isOrdered).toUpperCase() + " ";
+			cmd += "WHERE " + DBConstants.T_QUIZ_C_QUESTIONS + " = ";
+			cmd += "\"" + questionName + "\"";
+			cmd += ";";
+			
+			state.execute(cmd);
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+	}
+	public void addSolution(int orderNumber, String solution){
+		/*
+		 * TODO:
+		 */
+	}
+	public void addSolutions(Map<Integer,String> solutions){
+		for(Integer order:solutions.keySet()){
+			addSolution(order, solutions.get(order));
+		}
+	}
+	public int getNumAnswers(){
+		/*
+		 * TODO:
+		 */
+		return 0;
+	}
+	public boolean isSolution(int orderNumber, String guess){
+		/*
+		 * TODO:
+		 */
+		return true;
+	}
+	public boolean isSolution(String guess){
+		/*
+		 * TODO:
+		 */
+		return true;
+	}
+	public HashSet<String> getSolutions(int orderNumber){
+		/*
+		 * TODO:
+		 */
+		return null;
+	}
+	public HashMap<Integer, HashSet<String>> getSolutions(){
+		/*
+		 * TODO:
+		 */
+		return null;
+	}
+	public void clearAllSolutions(){
+		/*
+		 * TODO:
+		 */
+	}
+	
+	/*-------------------------- END PUBLIC FUNCTIONS ----------------------------------*/
+}

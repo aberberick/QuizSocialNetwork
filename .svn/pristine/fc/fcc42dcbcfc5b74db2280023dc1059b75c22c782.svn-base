@@ -1,0 +1,44 @@
+<%@ page language="java" contentType="text/html; charset=ISO-8859-1"
+    pageEncoding="ISO-8859-1"%>
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<title>User: <%= request.getParameter("id")%></title>
+<%@include file="refBootstrap.jsp" %>
+</head>
+
+<body>
+<%@include file="imports.jsp" %>
+<%@include file="refNavbar.jsp" %>
+
+   <div class="jumbotron">
+       <div class="container">
+            <h1>User: <%= request.getParameter("id")%></h1>
+  <% 
+    // DISPLAY User
+    String userName = request.getParameter("id");
+    SystemManager sm = (SystemManager)application.getAttribute("sm");
+    UserManager userManager = sm.getUserManager();
+    if (userManager.isUserNameAvailable(userName)) {
+    	// write that the user does not exist
+    	out.write("User " + userName + " does not exist");
+    }
+    else {
+	    User u = userManager.getExistingUser(userName);
+	    out.write("<h2>" + u.getUserName() + "</h2>");
+	    if (u.isAdmin()) { %>
+	    	<p>Administrator</p>
+	    	<%
+	    }
+	    else {      %>
+	        <p>Standard User</p>
+	    <%
+	    }
+	    out.write("<p>To string: " + u.toString() + "</p>");
+    }
+	     %>
+     </div>
+     </div>
+</body>
+</html>

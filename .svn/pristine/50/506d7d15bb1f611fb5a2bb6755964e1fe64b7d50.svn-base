@@ -1,0 +1,186 @@
+package quiz_system;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+
+import com.mysql.jdbc.Connection;
+import com.mysql.jdbc.Statement;
+
+import database.DBConstants;
+
+public class MultipleAnswerQ extends Question{
+	
+	/*
+	 * Note:
+	 * Choice Table - holds nothing
+	 * Solutions Table: Choices Column - holds a string corresponding to the order number of the solution
+	 * Solutions Table: Solutions Column - holds the string corresponding to the solution of the order number
+	 */
+	
+	/*-------------------------- CONSTRUCTOR -------------------------------------------*/
+	protected MultipleAnswerQ(Connection connection, String questionName, String parentQuizName) {
+		super(connection, questionName, QuestionType.MULTIPLE_ANSWER, parentQuizName);
+	}
+	/*-------------------------- END CONSTRUCTOR ---------------------------------------*/
+	
+	
+	/*-------------------------- PUBLIC FUNCTIONS --------------------------------------*/
+	public boolean isOrdered(){
+		boolean isOrdered = DEFAULT_IS_ORDERED;
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "SELECT " + DBConstants.T_QUIZ_C_ORDERED + " ";
+			cmd += "FROM " + DBConstants.TP_QUIZ + parentQuizName + " ";
+			cmd += "WHERE " + DBConstants.T_QUIZ_C_QUESTIONS + " = ";
+			cmd += "\"" + questionName + "\"";
+			cmd += ";";
+			
+			ResultSet rs = state.executeQuery(cmd);
+			if(rs.next()){
+				isOrdered = rs.getBoolean(DBConstants.T_QUIZ_C_ORDERED);
+			}
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+		return isOrdered;
+	}
+	public void setOrdered(boolean isOrdered){
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "UPDATE " + DBConstants.TP_QUIZ + parentQuizName + " ";
+			cmd += "SET " + DBConstants.T_QUIZ_C_ORDERED + " = ";
+			cmd += " " + Boolean.toString(isOrdered).toUpperCase() + " ";
+			cmd += "WHERE " + DBConstants.T_QUIZ_C_QUESTIONS + " = ";
+			cmd += "\"" + questionName + "\"";
+			cmd += ";";
+			
+			state.execute(cmd);
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+	}
+	public void addSolution(int orderNumber, String solution){
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "INSERT INTO ";
+			cmd += DBConstants.TP_QSOLUTIONS + parentQuizName + questionName + " ";
+			cmd += " VALUE (";
+			cmd += "\"" + Integer.toString(orderNumber) + "\", ";
+			cmd += "\"" + solution + "\"";
+			cmd += ");";
+			
+			state.execute(cmd);
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+	}
+	public void addSolutions(Map<Integer,String> solutions){
+		for(Integer order:solutions.keySet()){
+			addSolution(order, solutions.get(order));
+		}
+	}
+	public int getNumAnswers(){
+		return getOrderNumbers().size();
+	}
+	public boolean isSolution(int orderNumber, String guess){
+		return getSolutions(orderNumber).contains(guess);
+	}
+	public boolean isSolution(String guess){
+		return getSolutions().contains(guess);
+	}
+	public HashSet<String> getSolutions(){
+		HashSet<String> solutions = new HashSet<String>();
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "SELECT * ";
+			cmd += "FROM " + DBConstants.TP_QSOLUTIONS;
+			cmd += parentQuizName + questionName + " ";
+			cmd += ";";
+			
+			ResultSet rs = state.executeQuery(cmd);
+			while(rs.next()){
+				String solution = rs.getString(DBConstants.T_QSOLUTIONS_C_SOLUTIONS);
+				solutions.add(solution);
+			}
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+		return solutions;		
+	}
+	public HashSet<String> getSolutions(int orderNumber){
+		HashSet<String> solutions = new HashSet<String>();
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "SELECT * ";
+			cmd += "FROM " + DBConstants.TP_QSOLUTIONS;
+			cmd += parentQuizName + questionName + " ";
+			cmd += "WHERE " + DBConstants.T_QSOLUTIONS_C_CHOICES + " = ";
+			cmd += "\"" + Integer.toString(orderNumber) + "\"";
+			cmd += ";";
+			
+			ResultSet rs = state.executeQuery(cmd);
+			while(rs.next()){
+				String solution = rs.getString(DBConstants.T_QSOLUTIONS_C_SOLUTIONS);
+				solutions.add(solution);
+			}
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+		return solutions;
+	}
+	public HashMap<Integer, HashSet<String>> getSolutionOrderMap(){
+		HashMap<Integer, HashSet<String>> orderSolutionMap = new HashMap<Integer, HashSet<String>>();
+		
+		for(int num:getOrderNumbers()){
+			orderSolutionMap.put(num, getSolutions(num));
+		}
+		return orderSolutionMap;
+	}
+	public HashSet<Integer> getOrderNumbers(){
+		HashSet<Integer> numbers = new HashSet<Integer>();
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "SELECT * ";
+			cmd += "FROM " + DBConstants.TP_QSOLUTIONS;
+			cmd += parentQuizName + questionName + " ";
+			cmd += ";";
+			
+			ResultSet rs = state.executeQuery(cmd);
+			while(rs.next()){
+				String strNum = rs.getString(DBConstants.T_QSOLUTIONS_C_CHOICES);
+				int num = Integer.parseInt(strNum);
+				if(!numbers.contains(num)){
+					numbers.add(num);					
+				}
+			}
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+		return numbers;
+	}
+	public void clearAllSolutions(){
+		try{
+			//Clear any previous correct choice
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "TRUNCATE TABLE ";
+			cmd += DBConstants.TP_QSOLUTIONS;
+			cmd += parentQuizName + questionName + " ";
+			cmd += ";";			
+			state.execute(cmd);
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+	}
+	/*-------------------------- END PUBLIC FUNCTIONS ----------------------------------*/
+}

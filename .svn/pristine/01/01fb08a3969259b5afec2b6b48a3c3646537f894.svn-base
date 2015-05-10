@@ -1,0 +1,94 @@
+package quiz_system;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.HashSet;
+
+import com.mysql.jdbc.Connection;
+import com.mysql.jdbc.Statement;
+
+import database.DBConstants;
+
+public class ResponseQ extends Question{
+	
+	/*-------------------------- CONSTRUCTOR -------------------------------------------*/
+	protected ResponseQ(Connection connection, String questionName, String parentQuizName) {
+		super(connection, questionName, QuestionType.RESPONSE, parentQuizName);
+	}
+	/*-------------------------- END CONSTRUCTOR ---------------------------------------*/
+	
+	
+	/*-------------------------- PUBLIC FUNCTIONS --------------------------------------*/
+	public void addSolution(String solution){
+		//Add a new quiz with the name
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "INSERT INTO ";
+			cmd += DBConstants.TP_QSOLUTIONS + parentQuizName + questionName + " ";
+			cmd += " VALUES (";
+			cmd += "\"" + DEFAULT_CHOICE + "\", ";
+			cmd += "\"" + solution + "\" ";
+			cmd += ");";
+			state.execute(cmd);
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+	}
+	public void addSolutions(HashSet<String> solutions){
+		for(String sol:solutions){
+			addSolution(sol);
+		}
+	}
+	public HashSet<String> getSolutions(){
+		HashSet<String> solutions = new HashSet<String>();
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "SELECT " + DBConstants.T_QSOLUTIONS_C_SOLUTIONS + " ";
+			cmd += "FROM " + DBConstants.TP_QSOLUTIONS;
+			cmd += parentQuizName + questionName + " ";
+			cmd += ";";
+			
+			ResultSet rs = state.executeQuery(cmd);
+			while(rs.next()){
+				solutions.add(rs.getString(DBConstants.T_QSOLUTIONS_C_SOLUTIONS));
+			}
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+		return solutions;
+	}
+	public void removeSolution(String solution){
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "DELETE FROM ";
+			cmd += DBConstants.TP_QSOLUTIONS + parentQuizName + questionName + " ";
+			cmd += " WHERE " + DBConstants.T_QSOLUTIONS_C_SOLUTIONS + " = ";
+			cmd += "\"" + solution + "\" ";
+			cmd += ";";
+			state.execute(cmd);
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+	}
+	public void clearAllSolutions(){
+		HashSet<String> solutions = getSolutions();
+		for(String sol:solutions){
+			removeSolution(sol);
+		}
+	}
+	public boolean isSolution(String guess){
+		HashSet<String> solutions = getSolutions();
+		for(String sol:solutions){
+			if(sol.equals(guess)) return true;
+		}
+		return false;
+	}
+	/*-------------------------- END PUBLIC FUNCTIONS ----------------------------------*/
+	
+	
+	/*-------------------------- INITIALIZATION FUNCTIONS ------------------------------*/
+	/*-------------------------- END INITIALIZATION FUNCTIONS --------------------------*/	
+}

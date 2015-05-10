@@ -1,0 +1,78 @@
+<%@ page language="java" contentType="text/html; charset=ISO-8859-1"
+    pageEncoding="ISO-8859-1"%>
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<title>Quiz Summary</title>
+<%@include file="refBootstrap.jsp" %>
+</head>
+
+<body>
+<%@include file="imports.jsp" %>
+<%@include file="refNavbar.jsp" %>
+
+   <div class="jumbotron">
+       <div class="container">
+            <h1>Quiz: <%= request.getParameter("quizName")%></h1>
+  
+  <% 
+    // Get Quiz
+    String quizName = request.getParameter("quizName");
+    SystemManager sm = (SystemManager)application.getAttribute("sm");
+    QuizManager quizManager = sm.getQuizManager();
+    Quiz q = quizManager.getQuiz(quizName);
+    
+    long timeStart = System.currentTimeMillis();
+    session.setAttribute("timeStart", timeStart);
+    
+    boolean onePage = q.isOnePage();
+    boolean practiceEnabled = q.isPracticeEnabled();
+    boolean randomized = q.isRandomized();
+    boolean timed = q.isTimed();
+    
+    // Display category
+    %>
+    <p>Category: <%= q.getCategory() %><br />
+    <%
+    
+    // Display Tags
+    out.write("Tags: ");
+    HashSet<String> tags = q.getTags();
+    for (String tag : tags) {
+    	out.write(tag + " ");
+    }
+    out.write("<br />");
+    
+    // display description
+    out.write("Description: " + q.getDescription() + "</p>");
+    
+    // display date created
+    out.write("<p><small>");
+    Date d = new Date(q.getDateCreated());
+    SimpleDateFormat df = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss Z");
+    String dText = df.format(d);
+    out.write("Date created: " + dText + "</small></p>");
+    
+    // display rating
+    double rating = q.getAverageRating();
+    if (rating == Quiz.DEFAULT_RATING) {
+    	out.write("<p>Average rating: quiz not yet rated</p>");
+    }
+    else {
+        out.write("<p>Average rating: " + rating + "</p>");
+    }
+    
+    // display options
+    out.write("<p> One page: " + onePage + "; " );
+    out.write("Practice mode: " + practiceEnabled + "; " );
+    out.write("Random order: " + randomized + "; " );
+    out.write("Timed: " + timed + "<br/>");
+    
+    %>
+    <p><a href="show-quiz.jsp?quizName=<%= q.getName() %>">Take Quiz</a></p>
+    </div>
+    </div>
+
+</body>
+</html>

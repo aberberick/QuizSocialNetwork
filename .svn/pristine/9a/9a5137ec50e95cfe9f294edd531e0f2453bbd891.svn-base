@@ -1,0 +1,16 @@
+package user;
+
+public enum Achievement {
+
+	AMATEUR_AUTHOR,
+	PRODIGIOUS_AUTHOR,
+	QUIZ_MACHINE,
+	I_AM_THE_GREATEST,
+	PRACTICE_MAKES_PERFECT,
+	PROLIFIC_AUTHOR;
+	
+	
+	
+	
+	
+}

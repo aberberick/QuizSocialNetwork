@@ -1,0 +1,68 @@
+package servlets;
+
+import java.io.IOException;
+import java.sql.SQLException;
+
+import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import quiz_system.Quiz;
+import quiz_system.QuizManager;
+import system.SystemManager;
+import user.User;
+import user.UserManager;
+
+/**
+ * Servlet implementation class MarkOffensiveServlet
+ */
+@WebServlet("/MarkOffensiveServlet")
+public class MarkOffensiveServlet extends HttpServlet {
+	private static final long serialVersionUID = 1L;
+       
+    /**
+     * @see HttpServlet#HttpServlet()
+     */
+    public MarkOffensiveServlet() {
+        super();
+        // TODO Auto-generated constructor stub
+    }
+
+	/**
+	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
+	 */
+	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		// TODO Auto-generated method stub
+	}
+
+	/**
+	 * @see HttpServlet#doPost(HttpServletRequest request, HttpServletResponse response)
+	 */
+	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		ServletContext context=request.getServletContext();
+		HttpSession session=request.getSession();
+		User user=(User)session.getAttribute("signedInUser");
+		String quizName=request.getParameter("quizName");
+		SystemManager sm = (SystemManager)context.getAttribute("sm");
+		QuizManager qm = sm.getQuizManager();
+		
+		Quiz quiz =qm.getQuiz(quizName);
+		System.out.println("users view quiz: "+ quiz.getName() + "inapp: "+ quiz.getTakersWhoDislikeQuiz().size());
+		quiz.setInappropriate(user, true);
+		
+		//The user had to already take the quiz, if they didn't it won't show up that they think it is inappropriate
+		System.out.println("after: users view inapp: "+ quiz.getTakersWhoDislikeQuiz().size());
+		
+		
+		RequestDispatcher dispatch = request.getRequestDispatcher("quizSummary.jsp"); 
+		 dispatch.forward(request, response); 
+	
+	
+	}
+
+}

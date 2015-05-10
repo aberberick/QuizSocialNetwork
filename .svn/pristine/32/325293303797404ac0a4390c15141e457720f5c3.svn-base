@@ -1,0 +1,34 @@
+package message;
+
+import user.User;
+
+public class Announcement {
+
+	public String date;
+	public User sender;
+	public String textMessage;
+	protected int idCount;
+	
+	public Announcement(User sender, String textMessage) {
+		this.sender=sender;
+		this.textMessage=textMessage;
+		
+		
+	}
+	
+	public String getDate(){
+		return date;
+	}
+	
+	protected void setID(int num){
+		idCount=num;
+	}
+	
+	protected int getID(){
+		return idCount;
+	}
+
+
+	
+	
+}

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://java.sun.com/xml/ns/j2ee" xmlns:javaee="http://java.sun.com/xml/ns/javaee" xmlns:web="http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd" xsi:schemaLocation="http://java.sun.com/xml/ns/j2ee http://java.sun.com/xml/ns/j2ee/web-app_2_4.xsd" id="WebApp_ID" version="2.4">
+  <javaee:display-name>QuizWeb</javaee:display-name>
+  <welcome-file-list>
+    <welcome-file>index.html</welcome-file>
+    <welcome-file>index.htm</welcome-file>
+    <welcome-file>index.jsp</welcome-file>
+    <welcome-file>default.html</welcome-file>
+    <welcome-file>default.htm</welcome-file>
+    <welcome-file>default.jsp</welcome-file>
+  </welcome-file-list>
+  <servlet>
+    <javaee:description></javaee:description>
+    <javaee:display-name>QuizServlet0</javaee:display-name>
+    <servlet-name>QuizServlet0</servlet-name>
+    <servlet-class>servlets.QuizServlet1</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>QuizServlet0</servlet-name>
+    <url-pattern>/QuizServlet0</url-pattern>
+  </servlet-mapping>
+</web-app>

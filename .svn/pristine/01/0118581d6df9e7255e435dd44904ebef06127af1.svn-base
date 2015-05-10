@@ -1,0 +1,67 @@
+<%@ page language="java" contentType="text/html; charset=ISO-8859-1"
+	pageEncoding="ISO-8859-1"%>
+
+<%@ page import="java.util.*"%>
+
+<!--<%@ page import="question.FillInBlankQ" %>
+--><%@ page import="user.User"%>
+
+<%@ page import="user.UserManager"%>
+<%@ page import="quiz_system.QuizManager"%>
+<%@ page import="quiz_system.Quiz"%>
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<title>Home</title>
+</head>
+<body>
+
+<h1>Home</h1>
+<% User user = (User)application.getAttribute("signedInUser"); 
+	ArrayList<User> friendList=user.getFriendList();
+
+%>
+
+<p><!--
+
+TODO: get MessageCount here
+--><a href="MessagesServlet">Messages (COUNT_HERE)</a></p>
+<p>User name: <%=user.getUserName() %> 
+<br>
+Friend List: 
+
+<ul>
+<% for(int i=0; i<friendList.size(); i++) { 
+		String friendUserName=friendList.get(i).getUserName();
+	%><li> <a href="FriendHomeServlet?name=<%= friendUserName %>"> <%= friendUserName %></a>
+
+<%} %>
+</ul>
+</p>
+<br>
+
+
+
+
+<p>
+Recent Quizzes: 
+<ul>
+<% QuizManager quizManager=(QuizManager)application.getAttribute("quizManager");
+long currentTime=System.currentTimeMillis();
+ArrayList<Quiz> recentQuizzes= quizManager.getRecentlyCreatedQuizzes(currentTime);
+for(int i=0; i<recentQuizzes.size() && i<10; i++) {
+	String quizName=recentQuizzes.get(i).getName();
+	%> <li> <a href="QuizServlet?name=<%= quizName %>"> <%= quizName %></a>
+<% }
+
+
+%>
+</ul>
+<br>
+<a href="createQuiz.jsp"> Create a Quiz</a>
+
+</p>
+</body>
+</html>

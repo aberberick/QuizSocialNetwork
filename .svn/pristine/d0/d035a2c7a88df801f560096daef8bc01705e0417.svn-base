@@ -1,0 +1,145 @@
+<%@ page language="java" contentType="text/html; charset=ISO-8859-1"
+	pageEncoding="ISO-8859-1"%>
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+
+<title>Profile Page</title>
+<%@include file="refBootstrap.jsp" %>
+</head>
+
+<body>
+<%@include file="imports.jsp" %>
+<%@include file="refNavbar.jsp" %>
+  <div class="container" style="margin-top:60px">
+	<div class="jumbotron">
+        <div class="container">
+<% 
+	User signedInUser = (User)session.getAttribute("signedInUser"); 
+	
+	SystemManager sm= (SystemManager)application.getAttribute("sm");
+	QuizManager qm = sm.getQuizManager();
+	UserManager um =sm.getUserManager();
+	
+    // DISPLAY User
+	String name=request.getParameter("name");
+    if (um.isUserNameAvailable(name)) {
+        // write that the user does not exist
+        out.write("User " + name + " does not exist");
+    }
+    else {
+        out.write("<h1>User: " + name + "</h1>");
+    }
+    
+	User user = um.getExistingUser(name);
+	ArrayList<Achievement> achievements = user.getAchievements();
+	ArrayList<Quiz> quizzesTaken = user.getTakenQuizes();
+	ArrayList<Quiz> quizzesCreated = user.getCreatedQuizes();
+	ArrayList<User> friendList=user.getFriendList();
+	ArrayList<Quiz> quizzesMade = user.getCreatedQuizes();
+    if (user.isAdmin()) { %>
+	    <p>Administrator</p>
+	    <%
+	}
+	else {      %>
+	    <p>Standard User</p>
+	<%
+	}
+    %>
+
+
+<% if(signedInUser.isAdmin()) {%>
+	
+	<form action="RemoveUserServlet" method="post">
+	<input name="userName" type="hidden" value="<%=name %>"/> 
+	<input type="Submit" value= "Delete User" />
+
+	</form>
+	<%if(!user.isAdmin()) { %>
+	<form action="CreateAdminServlet" method="post">
+	<input name="name" type="hidden" value="<%=name %>"/> 
+	<input type="Submit" value= "Make Administrator" />
+
+	</form>
+	<%} %>
+	<%
+}%>
+<%if((!friendList.contains(signedInUser)) &&  (!user.equals(signedInUser))) { %>
+
+<form action="CreateFriendRequestServlet" method="post">
+<input name="friendUserName" type="hidden" value="<%=name %>"/> 
+<input type="Submit" value= "Add as a Friend" />
+
+</form>
+<br>
+<%} 
+else if((!user.equals(signedInUser))) {%>
+	<form action="RemoveFriendServlet" method="post">
+	<input name="friendUserName" type="hidden" value="<%=name %>"/> 
+	<input type="Submit" value= "Delete Friend" />
+
+	</form>
+<% }
+if(!user.isPrivate() || user.equals(signedInUser)) {%>
+
+
+
+<h2>Achievements (<%=achievements.size() %>):</h2>
+
+<ul>
+<% for(int i=0; i<achievements.size(); i++) {
+	%> <li> <%=achievements.get(i).title %>:  <%=achievements.get(i).description %> <%
+}
+
+%>
+</ul>
+
+<h2>Quizzes Taken (<%=quizzesTaken.size() %>):</h2>
+<% for(int i=0; i<quizzesTaken.size(); i++) {
+	Quiz quiz = quizzesTaken.get(i);
+	ArrayList<QuizScore> scores = quiz.getMostRecentScores(user);
+	for(int j=0; i<1; i++) {
+		System.out.println("quiztaken");
+	QuizScore qs = scores.get(j);
+	// TODO display quizScore objects
+	%><li> <a href="quizSummary.jsp?quizName=<%= quiz.getName() %>"><%=quiz.getName() %></a>:  score: <%=qs.getScore() %> Time: <%=qs.getTimeToComplete()
+	%> Date: <%=qs.getDateTaken() %>
+	</li>
+	 <%
+	}
+}
+}
+// Dispaly friends
+%>
+    <h2>Friends (<%= friendList.size() %>)</h2>
+    <ul>
+        <% for(int i=0; i<friendList.size(); i++) { 
+            String friendUserName=friendList.get(i).getUserName();
+        %><li><a href="UserServlet?name=<%= friendUserName %>">
+        <%= friendUserName %></a> <%} %>
+        
+    </ul>
+<%
+// Display quizzes
+out.write("<h2>Quizzes Made (" + quizzesMade.size() + ")</h2>");
+ // display quiz links
+    for (int i = quizzesMade.size()-1; i >= 0; i--) {
+        Quiz q = quizzesMade.get(i);
+    //    out.write("<h3>" + q.getName() + "</h3>");
+        out.write("<h3> </h3>");
+        Date d = new Date(q.getDateCreated());
+        SimpleDateFormat df = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss Z");
+        String dText = df.format(d);
+        out.write("<p>Date created: " + dText + "</p>");
+        %>
+        <p><a href="quizSummary.jsp?quizName=<%= q.getName() %>">Take Quiz</a></p>
+        <%
+    }
+    %>
+
+</div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,84 @@
+package database;
+
+public class DBConstants {
+
+	/*
+	 * Notes:
+	 * T = Table
+	 * TP = Table Prefix
+	 * C = Column
+	 */
+	
+	/*-------------------------- MY --------------------------------------*/
+	public static final String SQL_LONG_STRING = "TEXT";
+	public static final String SQL_MEDIUM_STRING = "CHAR(200)";
+	public static final String SQL_SHORT_STRING = "CHAR(50)";
+	public static final String SQL_BOOLEAN = "BOOLEAN";
+	public static final String SQL_DOUBLE = "DOUBLE";
+	public static final String SQL_INT = "BIGINT";
+	
+	
+	/*-------------------------- QUIZZES TABLE CONSTANTS --------------------------------------*/
+	public static final String T_QUIZZES = "Quizzes";
+	public static final String T_QUIZZES_C_CREATOR = "creator";
+	public static final String T_QUIZZES_C_QUIZ = "quiz";
+	public static final String T_QUIZZES_C_CATEGORY = "category";
+	public static final String T_QUIZZES_C_DATE_CREATED = "dateCreated";
+	public static final String T_QUIZZES_C_ONEPAGE = "onePage";
+	public static final String T_QUIZZES_C_PRACTICE = "practice";
+	public static final String T_QUIZZES_C_DESCRIPTION = "description";
+	public static final String T_QUIZZES_C_TIMED = "timed";
+	public static final String T_QUIZZES_C_RANDOMIZED = "randomized";
+	public static final String T_QUIZZES_C_CORRECTED_IMMEDIATLEY = "correctedImmediatley";
+	/*-------------------------- END QUIZZES TABLE CONSTANTS ----------------------------------*/
+	
+	
+	/*-------------------------- QUIZ TABLE CONSTANTS -----------------------------------------*/
+	public static final String TP_QUIZ  = "QUIZ";
+	public static final String T_QUIZ_C_QUESTIONS  = "questions";
+	public static final String T_QUIZ_C_TYPE  = "type";
+	public static final String T_QUIZ_C_PROMPT  = "prompt";
+	public static final String T_QUIZ_C_TIME  = "time";
+	public static final String T_QUIZ_C_PICTURE  = "picture";
+	public static final String T_QUIZ_C_ORDERED = "ordered"; 
+	/*-------------------------- END QUIZ TABLE CONSTANTS -------------------------------------*/
+	
+	
+	/*-------------------------- QUIZ_SCORES TABLE CONSTANTS ----------------------------------*/
+	public static final String TP_QUIZSCORE  = "QUIZ_SCORRES";
+	public static final String T_QUIZSCORE_C_TAKERS  = "takers";
+	public static final String T_QUIZSCORE_C_SCORE  = "takerScore";
+	public static final String T_QUIZSCORE_C_TIME  = "takerTime";
+	public static final String T_QUIZSCORE_C_DATE  = "dateTaken";
+	public static final String T_QUIZSCORE_C_RATING  = "rating";
+	public static final String T_QUIZSCORE_C_INAPPROPRIATE  = "inappropriate";
+	/*-------------------------- END QUIZ_SCORES TABLE CONSTANTS ------------------------------*/
+	
+	
+	/*-------------------------- QUIZ_TAGS TABLE CONSTANTS ------------------------------------*/
+	public static final String TP_QUIZTAGS  = "QUIZ_TAGS";
+	public static final String T_QUIZTAGS_C_TAGS  = "tags";
+	/*-------------------------- END QUIZ_TAGS TABLE CONSTANTS --------------------------------*/
+	
+	
+	/*-------------------------- QUESTION_CHOICES TABLE CONSTANTS -----------------------------*/
+	public static final String TP_QCHOICES  = "QUESTION_CHOICES";
+	public static final String T_QCHOICES_C_CHOICES  = "choices";
+	/*-------------------------- END QUESTION_CHOICES TABLE CONSTANTS -------------------------*/
+	
+	
+	/*-------------------------- QUESTION_SOLUTIONS TABLE CONSTANTS ---------------------------*/
+	public static final String TP_QSOLUTIONS  = "QUESTION_SOLUTIONS";
+	public static final String T_QSOLUTIONS_C_CHOICES  = "choices";
+	public static final String T_QSOLUTIONS_C_SOLUTIONS  = "solutions";
+	/*-------------------------- END QUESTION_SOLUTIONS TABLE CONSTANTS -----------------------*/
+	
+	
+	/*-------------------------- QUESTION_ANSWERS TABLE CONSTANTS -----------------------------*/
+	public static final String TP_QANSWERS  = "QUESTION_ANSWERS";
+	public static final String T_QANSWERS_C_TAKER  = "taker";
+	public static final String T_QANSWERS_C_ANSWERS  = "answers";
+	public static final String T_QANSWERS_C_TIME  = "timetaken";
+	/*-------------------------- END QUESTION_ANSWERS TABLE CONSTANTS -------------------------*/
+
+}

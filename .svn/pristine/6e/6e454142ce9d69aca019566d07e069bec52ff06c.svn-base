@@ -1,0 +1,64 @@
+package servlets;
+
+import java.io.IOException;
+
+import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import message.FriendM;
+import message.Message;
+
+/**
+ * Servlet implementation class FriendMRespondServlet
+ */
+@WebServlet("/FriendMRespondServlet")
+public class FriendMRespondServlet extends HttpServlet {
+	private static final long serialVersionUID = 1L;
+       
+    /**
+     * @see HttpServlet#HttpServlet()
+     */
+    public FriendMRespondServlet() {
+        super();
+        // TODO Auto-generated constructor stub
+    }
+
+	/**
+	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
+	 */
+	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		// TODO Auto-generated method stub
+	}
+
+	/**
+	 * @see HttpServlet#doPost(HttpServletRequest request, HttpServletResponse response)
+	 */
+	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		//message should be true or false
+		ServletContext context=request.getServletContext();
+		String reciever=(String)context.getAttribute("signedInUserName");
+		String sender= request.getParameter("sender");
+		String accept=request.getParameter("isAccepted");
+		
+		String text="";
+		
+		//hiii hiii  hiii
+		///		/// create message through the mailbox
+
+		FriendRequest friendMessage=new FriendM(Message.FRIEND_REQUEST, sender, reciever, text);
+		if(accept.equals("true")) {
+			friendMessage.confirm();
+		}
+		else {
+//			friendMessage.deny();
+		}
+		RequestDispatcher dispatch = request.getRequestDispatcher("HomeServlet.java"); 
+		dispatch.forward(request, response); 
+	}
+
+}

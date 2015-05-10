@@ -1,0 +1,52 @@
+<%@ page language="java" contentType="text/html; charset=ISO-8859-1"
+    pageEncoding="ISO-8859-1"%>
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<title>Inbox</title>
+<%@ page import="user.User"%>
+
+<%@ page import="user.UserManager"%>
+<%@ page import="message.Mailman"%>
+<%@ page import="message.FriendRequest"%>
+<%@ page import="system.SystemManager"%>
+<%@ page import="quiz_system.QuizManager"%>
+<%@ page import="quiz_system.Quiz"%>
+<%@ page import="java.util.*"%>
+
+
+
+<%@ page import="system.*"%>
+
+
+<%@include file="refBootstrap.jsp" %>
+</head>
+
+<body>
+<%@include file="refNavbar.jsp" %>
+<h1>Message Central</h1>
+<% SystemManager sm = (SystemManager)application.getAttribute("sm");
+User user = (User)session.getAttribute("signedInUser"); 
+Mailman mailMan=sm.getMailman();
+ArrayList<FriendRequest> friendRequests = mailMan.getFriendRequests(user);
+int numFriendRequests=friendRequests.size();
+
+//int numFriendRequests=mailMan.getFriendRequests(user).size();
+int numChallengeRequests=mailMan.getChallengeRequests(user).size();
+int numTextMessages=mailMan.getTextMessages(user).size();
+
+
+%>
+<a href="friendRequests.jsp"> Friend Requests (<%=numFriendRequests%>)</a>
+<a href="textMessages.jsp"> Text Messages (<%=numTextMessages %>)</a>
+<a href="quizChallenges.jsp"> Quiz Challenges (<%=numChallengeRequests %>)</a>
+<br>
+<a href="createFriendRequest.jsp"> Send a Friend Request</a>
+<a href="createMessage.jsp"> Create a Message</a>
+<a href="createQuizChallenge.jsp"> Make a Quiz Challenge</a>
+
+
+
+</body>
+</html>

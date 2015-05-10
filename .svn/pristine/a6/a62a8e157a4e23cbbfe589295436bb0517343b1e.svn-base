@@ -1,0 +1,229 @@
+package message;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.text.DateFormat;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
+
+import database.*;
+import user.*;
+import quiz_system.*;
+
+import com.mysql.jdbc.Connection;
+import com.mysql.jdbc.Statement;
+public class Mailman {
+
+	
+	private Connection con;
+	private ResultSet rs;
+	protected int idCount;
+	private UserManager manager;
+	private QuizManager qManager;
+	
+	
+	
+	private final static String textType = "TEXT";
+	private final static String friendRequestType = "FRIEND_REQUEST";
+	private final static String challengeType = "CHALLENGE";
+	
+	public Mailman(DBConnection connection, UserManager manager, QuizManager qManager) throws SQLException{
+		con=connection.getDBConnection();
+		deleteMailman();
+		createMessageTableInDB();
+		idCount=0;
+		this.manager=manager;
+		this.qManager=qManager;
+	
+	}
+
+
+	public void deleteMailman() throws SQLException{
+		Statement state=(Statement) con.createStatement();
+		state.executeUpdate("DROP TABLE IF EXISTS messages;");
+	}
+	
+	private void createMessageTableInDB() throws SQLException {
+		Statement state=(Statement) con.createStatement();
+		state.executeUpdate("CREATE TABLE messages (" 
+				+ "sender CHAR(64)," 
+				+ "receiver CHAR(64),"
+				+ "date CHAR(64),"
+				+ "type CHAR(64),"
+				+ "note CHAR(255),"
+				+ "quiz CHAR(64),"
+				+ "id CHAR(64)," 
+				+ "messageRead CHAR(64)"
+				+ ");"
+				);
+		
+	}
+
+
+	public void sendFriendRequest(User sender, User receiver, String text) throws SQLException{
+		idCount++;
+		Date date = new Date(System.currentTimeMillis());
+		DateFormat dForm =DateFormat.getDateInstance();
+		String dateStr=dForm.format(date);
+		Statement state = (Statement) con.createStatement();
+		state.executeUpdate("INSERT INTO messages VALUES (\""+sender.getUserName()+"\",\""+receiver.getUserName()+
+				"\",\""+dateStr+"\",\"" + friendRequestType + "\",\"" + text + "\",null," +
+				idCount + ",\"false\");"
+				);
+		
+		
+	}
+	
+	
+	public void sendChallenge(User sender, User receiver, String text, Quiz quiz) throws SQLException{
+		idCount++;
+		
+		String quizName = quiz.getName();
+		Date date = new Date(System.currentTimeMillis());
+		DateFormat dForm =DateFormat.getDateInstance();
+		String dateStr=dForm.format(date);
+		Statement state = (Statement) con.createStatement();
+		state.executeUpdate("INSERT INTO messages VALUES (\""+sender.getUserName()+"\",\""+receiver.getUserName()+
+				"\",\""+dateStr+"\",\"" + challengeType + "\",\"" + text + "\",\""+quizName+"\"," +
+				idCount + ",\"false\");"
+				);
+	}
+	
+	
+	
+	
+	public void sendTextMessage(User sender, User receiver, String text) throws SQLException{
+		idCount++;
+		Date date = new Date(System.currentTimeMillis());
+		DateFormat dForm =DateFormat.getDateInstance();
+		String dateStr=dForm.format(date);
+		Statement state = (Statement) con.createStatement();
+		state.executeUpdate("INSERT INTO messages VALUES (\""+sender.getUserName()+"\",\""+receiver.getUserName()+
+				"\",\""+dateStr+"\",\"" + textType + "\",\"" + text + "\",null," +
+				idCount + ",\"false\");"
+				);
+		
+		
+	}
+
+
+
+
+
+	public void removeMessagesForUser(User user) throws SQLException {
+		Statement state = (Statement) con.createStatement();
+		state.executeUpdate("DELETE FROM messages WHERE sender = \""+user.getUserName()+"\";");
+		state.executeUpdate("DELETE FROM messages WHERE receiver = \""+user.getUserName()+"\";");
+		
+	}
+	
+	@SuppressWarnings("unchecked")
+	ArrayList<Message> getTextMessages(User reciever) throws SQLException{
+		ArrayList<Message> messages = new ArrayList<Message>();
+		Statement state =  (Statement) con.createStatement();
+		rs = state.executeQuery("SELECT * FROM messages WHERE reciever=\""+reciever.getUserName()+"\";");
+		while(rs.next()){
+			if(rs.getString("type").equals(textType)){
+				String senderName = rs.getString("sender");
+				User sender = manager.getExistingUser(senderName);
+				String text = rs.getString("note");
+				String date = rs.getString("date");
+				String readState = rs.getString("messageRead");
+				boolean read=false;
+				if(readState.equals("true"))read=true;
+				int id = Integer.parseInt(rs.getString("id"));
+				Message textMessage = new Message(sender, reciever, text);
+				textMessage.setReadState(read);
+				textMessage.date=date;
+				textMessage.idCount=id;
+				messages.add(textMessage);
+			}
+		}
+		
+		Collections.sort(messages);
+		return messages;
+	}
+	
+	
+	@SuppressWarnings("unchecked")
+	ArrayList<FriendRequest> getFriendRequests(User reciever) throws SQLException{
+		Statement state =  (Statement) con.createStatement();
+		ArrayList<FriendRequest> requests = new ArrayList<FriendRequest>();
+		rs = state.executeQuery("SELECT * FROM messages WHERE reciever=\""+reciever.getUserName()+"\";");
+		while(rs.next()){
+			if(rs.getString("type").equals(friendRequestType)){
+				String senderName = rs.getString("sender");
+				User sender = manager.getExistingUser(senderName);
+				String text = rs.getString("note");
+				String date = rs.getString("date");
+				int id = Integer.parseInt(rs.getString("id"));
+				boolean read=false;
+				String readState = rs.getString("messageRead");
+				if(readState.equals("true"))read=true;
+				FriendRequest request = new FriendRequest(sender, reciever, text);
+				request.setReadState(read);
+				request.date=date;
+				request.idCount=id;
+				requests.add(request);
+			}
+		}
+		
+		
+		Collections.sort(requests);
+		return requests;
+
+	}
+	
+	
+	public void deleteMessage(Message m) throws SQLException{
+		int id = m.idCount;
+		Statement state =  (Statement) con.createStatement();
+		state.executeUpdate("DELETE FROM messages WHERE id = \"" + id +"\";");
+		
+	}
+	
+	
+	@SuppressWarnings("unchecked")
+	ArrayList<ChallengeRequest>getChallengeRequests(User reciever) throws SQLException{
+		ArrayList<ChallengeRequest> challenges = new ArrayList<ChallengeRequest>();
+		Statement state =  (Statement) con.createStatement();
+		rs = state.executeQuery("SELECT * FROM messages WHERE reciever=\""+reciever.getUserName()+"\";");
+		while(rs.next()){
+			if(rs.getString("type").equals(challengeType)){
+				String senderName = rs.getString("sender");
+				User sender = manager.getExistingUser(senderName);
+				String text = rs.getString("note");
+				String date = rs.getString("date");
+				String quizName = rs.getString("quiz");
+				Quiz quiz = qManager.getQuiz(quizName);
+				int id = Integer.parseInt(rs.getString("id"));
+				boolean read=false;
+				String readState = rs.getString("messageRead");
+				if(readState.equals("true"))read=true;
+				ChallengeRequest request = new ChallengeRequest(sender, reciever, text, quiz);
+				request.setReadState(read);
+				request.date=date;
+				request.idCount=id;
+				challenges.add(request);
+			}
+		}
+		
+		Collections.sort(challenges);
+		return challenges;
+	}
+
+
+	public void setAttributes(QuizManager quizManager) {
+		qManager = quizManager;
+		
+	}
+	
+	
+	
+	
+	
+	
+	
+	
+}

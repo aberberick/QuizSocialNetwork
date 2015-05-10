@@ -1,0 +1,49 @@
+<%@ page language="java" contentType="text/html; charset=ISO-8859-1"
+    pageEncoding="ISO-8859-1"%>
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<title>Create New Quiz</title>
+<%@include file="refBootstrap.jsp" %>
+</head>
+
+<body>
+
+<%@include file="refNavbar.jsp" %>
+
+    <div class="jumbotron">
+        <div class="container">
+             <h1>
+                <%= (String) request.getAttribute("quizName") %>
+            </h1>
+            <% 
+            boolean quizTaken = (Boolean) request.getAttribute("quizTaken"); 
+            String quizName = (String) request.getAttribute("quizName");
+            String userName = (String) request.getAttribute("userName");
+            if (quizTaken) {
+                out.write("<p>Hey "
+                        + userName
+                        + ", it looks like the quiz name " 
+                        + quizName 
+                        + " is already taken. Click <a href=\"createQuiz0.jsp\">here</a> to try a different name.</p>");
+            }
+            else {
+            	out.write("<p>Second, <strong>select a question type</strong>.</p>");
+            	out.write("<p><form action=\"CreateQuizServlet1\" method=\"post\">");
+            	out.write("<select name=\"qType\">");
+            	out.write("<option value=\"response\">Response</option>");
+                out.write("<option value=\"fillintheblank\">Fill in the Blank</option>");
+                out.write("<option value=\"multiplechoice\">Multiple Choice</option>");
+                out.write("<option value=\"picture\">Picture Response</option>");
+                out.write("<option value=\"matching\">Matching</option>");
+                out.write("<option value=\"multiplechoiceanswer\">Multiple Choice Answer</option>");
+            	out.write("</select><br />");
+            	out.write("<input type=\"submit\" class=\"btn btn-primary\" value=\"Submit &raquo;\">");
+            	out.write("</form>");
+            }
+            %>
+        </div>
+    </div>
+</body>
+</html>

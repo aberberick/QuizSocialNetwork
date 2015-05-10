@@ -1,0 +1,1231 @@
+package quiz_system;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.TreeMap;
+
+import user.User;
+import user.UserManager;
+
+import com.mysql.jdbc.Connection;
+import com.mysql.jdbc.Statement;
+
+import database.DBConstants;
+
+public class Quiz extends Object{
+	/*-------------------------- CONSTANTS ---------------------------------------------*/
+	public static final double MAX_RATING = 10;
+	public static final double MIN_RATING = 0;
+	public static final double DEFAULT_RATING = -1;
+	
+	public static final boolean DEFAULT_IS_ONEPAGE = false;
+	public static final boolean DEFAULT_IS_PRACTICE = false;
+	public static final String DEFAULT_DESCRIPTION = "Quiz description has not been submitted.";
+	public static final boolean DEFAULT_IS_INAPPROPRIATE = false;
+	public static final boolean DEFAULT_IS_RANDOMIZED = false;
+	public static final boolean DEFAULT_IS_TIMED = false;
+	public static final long DEFAULT_DATE_TAKEN = -1;
+	public static final QuizCategory DEFAULT_QUIZ_CATEGORY = QuizCategory.NONE;
+	public static final boolean DEFAULT_IS_CORRECTED_IMMEDIATLEY = false;
+	/*-------------------------- END CONSTANTS -----------------------------------------*/
+	
+	
+	/*-------------------------- PRIVATE INSTANCE VARIABLES ----------------------------*/
+	private Connection con;
+	private Statement state;
+	private Date date;
+	
+	private String quizName;
+	private UserManager userManager;
+	/*-------------------------- END PRIVATE INSTANCE VARIABLES ------------------------*/
+	
+	
+	/*-------------------------- CONSTRUCTOR/OVERRIDDEN FUNCTIONS ----------------------*/
+	protected Quiz(Connection connection, String quizName, UserManager userManager){
+		con = connection;
+		this.quizName = quizName;
+		this.userManager = userManager;
+		initializeQuizTables();
+	}
+	@Override
+	public boolean equals(Object other){
+		Quiz otherQ = (Quiz) other;
+		
+		if(otherQ == this) return true;
+		if(otherQ.quizName.equals(quizName)) return true;
+		return false;
+	}
+	@Override
+	public String toString(){
+		String str = "";
+		str += "Quiz Name = " + this.getName() + ",  ";
+		str += "Quiz Creator = " + getCreator().getUserName() + ", ";
+		str += "Date Created = " + getDateCreated() + ", ";
+		str += "Description = " + this.getDescription();
+		return str;
+	}
+	public String questionsToString(){
+		String str = "";
+		str += "\n";
+		str += "Quiz " + quizName + " Table: Start \n";
+		ArrayList<Question> questions = getAllQuestions();
+		for(Question q:questions){
+			str += q.toString();
+			str += "\n";
+		}
+		str += "End Quiz Table";
+		str += "\n";
+		return str;
+	}
+	public String scoresToString(){
+		String str = "";
+		str += "\n";
+		str += "Quiz " + quizName + ":QuizScore Table: Start \n";
+		ArrayList<QuizScore> scores = getScores();
+		str += "Number of Scores = " + getNumScores() + "\n";
+		for(QuizScore score:scores){
+			str += score.toString();
+			str += "\n";
+		}
+		str += "End Quiz Score Table";
+		str += "\n";
+		return str;
+	}
+	public String tagsToString(){
+		String str = "";
+		str += "\n";
+		str += "Quiz " + quizName + ":QuizTag Table: Start \n";
+		HashSet<String> tags = getTags();
+		for(String tag:tags){
+			str += tag;
+			str += "\n";
+		}
+		str += "End Quiz Tag Table";
+		str += "\n";
+		return str;
+	}
+	/*-------------------------- END CONSTRUCTOR/OVERRIDDEN FUNCTIONS ------------------*/
+	
+	
+	/*-------------------------- PUBLIC QUESTION FUNCTIONS -----------------------------*/
+	public Question createAndAddQuestion(QuestionType type, String questionName, String prompt){
+		
+		//Remove quiz already occupying the same name
+		if(isQuestionNameTaken(quizName)){
+			removeQuestion(getQuestion(quizName));
+		}
+		
+		//Add a new quiz with the name
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "INSERT INTO " + DBConstants.TP_QUIZ + quizName + " VALUES (";
+			cmd += "\"" + questionName + "\", ";
+			cmd += "\"" + type.toString() + "\", ";
+			cmd += "\"" + prompt + "\", ";
+			cmd += "\"" + Question.DEFAULT_TIME_TO_TAKE + "\", ";
+			cmd += "\"" + Question.DEFAULT_PICTURE_PATH + "\", ";
+			cmd += " " + Boolean.toString(Question.DEFAULT_IS_ORDERED).toUpperCase() + " ";
+			cmd += ");";
+			state.execute(cmd);
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+		
+		//All other quiz tables are created by quiz object
+		return getQuestion(questionName);
+	}
+	public Question getQuestion(String questionName){
+		/*
+		 * TODO:
+		 * Implement for more question types
+		 */
+		Question q;
+		QuestionType type = QuestionType.NONE;
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "SELECT * FROM " + DBConstants.TP_QUIZ + quizName + " ";
+			cmd += "WHERE " + DBConstants.T_QUIZ_C_QUESTIONS + " = ";
+			cmd += "\"" + questionName + "\" ";
+			cmd += ";";
+			
+			ResultSet rs = state.executeQuery(cmd);
+			if(rs.next()){
+				type = QuestionType.fromString(rs.getString(DBConstants.T_QUIZ_C_TYPE));
+			}
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+		
+		switch(type){
+		case RESPONSE:
+			q = new ResponseQ(con, questionName, quizName);
+			break;
+		case FILL_IN_THE_BLANK:
+			q = new FillInBlankQ(con, questionName, quizName);
+			break;
+		case MULTIPLE_CHOICE:
+			q = new MultipleChoiceQ(con, questionName, quizName);
+			break;			
+		case PICTURE_RESPONSE:
+			q = new PictureResponseQ(con, questionName, quizName);
+			break;
+		case MULTIPLE_CHOICE_ANSWER:
+			q = new MultipleChoiceAnswerQ(con, questionName, quizName);
+			break;
+		case MULTIPLE_ANSWER:
+			q = new MultipleAnswerQ(con,questionName,quizName);
+			break;
+		case MATCHING:
+			q = new MatchingQ(con,questionName, quizName);
+			break;
+		case GRADED:
+			q = new GradedQ(con, questionName, quizName);
+			break;
+		default:
+			q = null;
+			break;
+		}
+		return q;
+	}
+	public ArrayList<Question> getAllQuestions(){
+		ArrayList<Question> qs = new ArrayList<Question>();
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "SELECT " +  DBConstants.T_QUIZ_C_QUESTIONS + " ";
+			cmd += " FROM " + DBConstants.TP_QUIZ + quizName + " ";
+			cmd += ";";
+			
+			ResultSet rs = state.executeQuery(cmd);
+			while(rs.next()){
+				
+				String qName = rs.getString(DBConstants.T_QUIZ_C_QUESTIONS);
+				Question q = getQuestion(qName);
+				
+				if(q != null){
+					qs.add(q);	
+				}
+			}
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+		return qs;
+	}
+	public int getNumQuestions(){
+		ArrayList<Question> questions = getAllQuestions();
+		if(questions.equals(null)) return 0;
+		return questions.size();
+	}
+	public boolean isQuestionNameTaken(String questionName){
+		ArrayList<Question> qs = getAllQuestions();
+		if(!qs.isEmpty()){
+			for(Question q:qs){
+				if (q.getName().equals(questionName))return true;
+			}			
+		}
+		return false;
+	}
+	/**
+	 * Removes question from quiz table and then calls question.remove to remove
+	 * @param question
+	 */
+	public void removeQuestion(Question question){
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "DELETE FROM " + DBConstants.TP_QUIZ + quizName + " ";
+			cmd += " WHERE " + DBConstants.T_QUIZ_C_QUESTIONS + " = ";
+			cmd += "\"" + question.getName() + "\" ";
+			cmd += ";";
+			state.execute(cmd);
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+		
+		//Since GradedQ needs to remove an extra table, need to call remove on the subclass
+		if(question.getQuestionType() == QuestionType.GRADED){
+			GradedQ gq = (GradedQ) question;
+			gq.remove();
+		}else{
+			question.remove();			
+		}
+
+	}
+	/*-------------------------- END PUBLIC QUESTION FUNCTIONS -----------------------------*/
+	
+
+	
+	/*-------------------------- PUBLIC TAKER/CREATOR FUNCTIONS ----------------------------*/
+	public User getCreator(){
+		User creator = null;
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "SELECT * FROM " + DBConstants.T_QUIZZES + " ";
+			cmd += "WHERE " + DBConstants.T_QUIZZES_C_QUIZ + " = ";
+			cmd += "\"" + quizName + "\"";
+			cmd += ";";
+			
+			ResultSet rs = state.executeQuery(cmd);
+			if(rs.next()){
+				String creatorName = rs.getString(DBConstants.T_QUIZZES_C_CREATOR);
+				creator = userManager.getExistingUser(creatorName);
+			}
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+		return creator;		
+	}
+	public ArrayList<User> getTakers(){
+		ArrayList<User> takers = new ArrayList<User>();
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "SELECT " + DBConstants.T_QUIZSCORE_C_TAKERS + " ";
+			cmd += "FROM " + DBConstants.TP_QUIZSCORE + quizName + " ";
+			cmd += ";";
+			
+			ResultSet rs = state.executeQuery(cmd);
+			while(rs.next()){
+				String userName = rs.getString(DBConstants.T_QUIZSCORE_C_TAKERS);
+				User user = userManager.getExistingUser(userName);
+				
+				if(user != null){
+					takers.add(user);					
+				}
+			}
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+		return takers;
+	}
+	public ArrayList<User> getTakers(long time){
+		ArrayList<User> takers = new ArrayList<User>();
+		date = new Date();
+		long lowestAcceptableTime = date.getTime() - time;
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "SELECT " + DBConstants.T_QUIZSCORE_C_TAKERS + " ";
+			cmd += "FROM " + DBConstants.TP_QUIZSCORE + quizName + " ";
+			cmd += "WHERE " + DBConstants.T_QUIZSCORE_C_DATE + " >= ";
+			cmd += Long.toString(lowestAcceptableTime) + " ";
+			
+			cmd += "SORT BY \"" + DBConstants.T_QUIZSCORE_C_DATE + "\" DESC ";
+			cmd += ";";
+			System.out.println("HI JAMES!!!!! "+ cmd);
+			ResultSet rs = state.executeQuery(cmd);
+			while(rs.next()){
+				String userName = rs.getString(DBConstants.T_QUIZSCORE_C_TAKERS);
+				User user = userManager.getExistingUser(userName);
+				if(user != null){
+					takers.add(user);					
+				}
+			}
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+		return takers;
+	}	
+	public int getNumTakers(){
+		ArrayList<User> takers = getTakers();
+		if(takers.equals(null) || takers.isEmpty()) return 0;
+		return takers.size();
+	}
+	public boolean hasUserTakenQuiz(User user){
+		boolean quizTakenByUser = false;
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "SELECT COUNT(*) ";
+			cmd += "FROM " + DBConstants.TP_QUIZSCORE + quizName + " ";
+			cmd += "WHERE " + DBConstants.T_QUIZSCORE_C_TAKERS + " = ";
+			cmd += "\"" + user.getUserName() + "\"";
+			cmd += ";";
+			
+			ResultSet rs = state.executeQuery(cmd);
+			if(rs.next()){
+				if(rs.getInt(1)>0){
+					quizTakenByUser = true;
+				}
+			}
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+		return quizTakenByUser;
+		
+	}
+	public int getNumTakers(long time){
+		ArrayList<User> takers = getTakers(time);
+		if(takers.equals(null) || takers.isEmpty()) return 0;
+		return takers.size();
+	}	
+	public QuizScore getHighScore(){
+		ArrayList<QuizScore> scores = getScores();
+		if(scores.equals(null) || scores.isEmpty()) return null;
+		return scores.get(scores.size()-1);
+	}
+	public QuizScore getHighScore(long time){
+		ArrayList<QuizScore> scores = getScores(time);
+		if(scores.equals(null) || scores.isEmpty()) return null;
+		return scores.get(scores.size()-1);		
+	}
+	public QuizScore getHighScore(User taker){
+		ArrayList<QuizScore> scores = getScores(taker);
+		if(scores.equals(null) || scores.isEmpty()) return null;
+		return scores.get(scores.size()-1);			
+	}
+	public QuizScore getLowestScore(){
+		ArrayList<QuizScore> scores = getScores();
+		if(scores.equals(null) || scores.isEmpty()) return null;
+		return scores.get(0);
+	}
+	public QuizScore getLowestScore(long time){
+		ArrayList<QuizScore> scores = getScores(time);
+		if(scores.equals(null)) return null;
+		return scores.get(0);
+	}
+	public QuizScore getLowestScore(User taker){
+		ArrayList<QuizScore> scores = getScores(taker);
+		if(scores.equals(null) || scores.isEmpty()) return null;
+		return scores.get(0);
+	}
+	public ArrayList<QuizScore> getScores(){
+		ArrayList<QuizScore> quizScores = new ArrayList<QuizScore>();
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "SELECT * ";
+			cmd += "FROM " + DBConstants.TP_QUIZSCORE + quizName + " ";
+			cmd += ";";
+			
+			ResultSet rs = state.executeQuery(cmd);
+			while(rs.next()){
+				String userName = rs.getString(DBConstants.T_QUIZSCORE_C_TAKERS);
+				User user = userManager.getExistingUser(userName);
+				long takerTime = rs.getLong(DBConstants.T_QUIZSCORE_C_TIME);
+				long dateTaken = rs.getLong(DBConstants.T_QUIZSCORE_C_DATE);
+				int score = rs.getInt(DBConstants.T_QUIZSCORE_C_SCORE);
+				
+				if(user != null){
+					QuizScore quizScore = new QuizScore(score,takerTime, user);
+					quizScore.setDateTaken(dateTaken);
+					quizScores.add(quizScore);
+				}
+			}
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+		Collections.sort(quizScores);
+		return quizScores;
+	}
+	public ArrayList<QuizScore> getScores(long time){
+		ArrayList<QuizScore> quizScores = new ArrayList<QuizScore>();
+		date = new Date();
+		long lowestAcceptableTime = date.getTime() - time;
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "SELECT * ";
+			cmd += "FROM " + DBConstants.TP_QUIZSCORE + quizName + " ";
+			cmd += "WHERE " + DBConstants.T_QUIZSCORE_C_DATE + " >= ";
+			cmd += Long.toString(lowestAcceptableTime) + " ";
+			cmd += ";";
+			
+			ResultSet rs = state.executeQuery(cmd);
+			while(rs.next()){
+				String userName = rs.getString(DBConstants.T_QUIZSCORE_C_TAKERS);
+				User user = userManager.getExistingUser(userName);
+				long takerTime = rs.getLong(DBConstants.T_QUIZSCORE_C_TIME);
+				long dateTaken = rs.getLong(DBConstants.T_QUIZSCORE_C_DATE);
+				int score = rs.getInt(DBConstants.T_QUIZSCORE_C_SCORE);
+				
+				if(user != null){
+					QuizScore quizScore = new QuizScore(score,takerTime, user);
+					quizScore.setDateTaken(dateTaken);
+					quizScores.add(quizScore);
+				}
+			}
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+		Collections.sort(quizScores);
+		return quizScores;
+	}
+	public ArrayList<QuizScore> getScores(User taker){
+		ArrayList<QuizScore> quizScores = new ArrayList<QuizScore>();
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "SELECT * ";
+			cmd += "FROM " + DBConstants.TP_QUIZSCORE + quizName + " ";
+			cmd += "WHERE " + DBConstants.T_QUIZSCORE_C_TAKERS + " = ";
+			cmd += "\"" + taker.getUserName() + "\" ";
+			cmd += ";";
+		
+			ResultSet rs = state.executeQuery(cmd);
+			while(rs.next()){
+				long takerTime = rs.getLong(DBConstants.T_QUIZSCORE_C_TIME);
+				long dateTaken = rs.getLong(DBConstants.T_QUIZSCORE_C_DATE);
+				int score = rs.getInt(DBConstants.T_QUIZSCORE_C_SCORE);
+				
+				if(taker != null){
+					QuizScore quizScore = new QuizScore(score,takerTime, taker);
+					quizScore.setDateTaken(dateTaken);
+					quizScores.add(quizScore);
+				}
+			}
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+		Collections.sort(quizScores);
+		return quizScores;
+	}
+	public ArrayList<QuizScore> getMostRecentScores(User taker){
+		ArrayList<QuizScore> quizScores = new ArrayList<QuizScore>();
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "SELECT * ";
+			cmd += "FROM " + DBConstants.TP_QUIZSCORE + quizName + " ";
+			cmd += "WHERE " + DBConstants.T_QUIZSCORE_C_TAKERS + " = ";
+			cmd += "\"" + taker.getUserName() + "\" ";
+			cmd += ";";
+		
+			ResultSet rs = state.executeQuery(cmd);
+			while(rs.next()){
+				long takerTime = rs.getLong(DBConstants.T_QUIZSCORE_C_TIME);
+				long dateTaken = rs.getLong(DBConstants.T_QUIZSCORE_C_DATE);
+				int score = rs.getInt(DBConstants.T_QUIZSCORE_C_SCORE);
+				
+				if(taker != null){
+					QuizScore quizScore = new QuizScore(score,takerTime, taker);
+					quizScore.setDateTaken(dateTaken);
+					quizScores.add(quizScore);
+				}
+			}
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+		TreeMap<Long,QuizScore> dateSortedScores = new TreeMap<Long,QuizScore>();
+		for (QuizScore score:quizScores){
+			dateSortedScores.put(score.getDateTaken(), score);
+		}
+		
+		quizScores.clear();
+		
+		if(!dateSortedScores.isEmpty()){
+			Long mostRecentLeft = dateSortedScores.lastKey();
+			while(true){
+				quizScores.add(dateSortedScores.get(mostRecentLeft));
+				mostRecentLeft = dateSortedScores.lowerKey(mostRecentLeft);
+				if(mostRecentLeft == null) break;
+			}
+		}
+		return quizScores;
+	}
+	
+	public int getNumScores(){
+		int numScores = 0;
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "SELECT COUNT(*) ";
+			cmd += "FROM " + DBConstants.TP_QUIZSCORE + quizName + " ";
+			cmd += ";";
+			
+			ResultSet rs = state.executeQuery(cmd);
+			if(rs.next()){
+				numScores = rs.getInt(1);
+			}
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+		return numScores;
+	}
+	public int getNumScores(long time){
+		int numScores = 0;
+		date = new Date();
+		long lowestAcceptableTime = date.getTime() - time;
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "SELECT COUNT(*) ";
+			cmd += "FROM " + DBConstants.TP_QUIZSCORE + quizName + " ";
+			cmd += "WHERE " + DBConstants.T_QUIZSCORE_C_DATE + " >= ";
+			cmd += Long.toString(lowestAcceptableTime) + " ";
+			cmd += ";";
+			
+			ResultSet rs = state.executeQuery(cmd);
+			if(rs.next()){
+				numScores = rs.getInt(1);
+			}
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+		return numScores;
+	}
+	public int getNumScores(User taker){
+		int numScores = 0;
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "SELECT COUNT(*) ";
+			cmd += "FROM " + DBConstants.TP_QUIZSCORE + quizName + " ";
+			cmd += "WHERE " + DBConstants.T_QUIZSCORE_C_TAKERS + " = ";
+			cmd += "\"" + taker.getUserName() + "\" ";
+			cmd += ";";
+			
+			ResultSet rs = state.executeQuery(cmd);
+			if(rs.next()){
+				numScores = rs.getInt(1);
+			}
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+		return numScores;
+	}
+	public void addScore(QuizScore score){
+		date = new Date();
+		long currentDate = date.getTime();
+		
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "INSERT INTO " + DBConstants.TP_QUIZSCORE + quizName + " VALUES (";
+			cmd += "\"" + score.getUser().getUserName() + "\", ";
+			cmd += " " + Integer.toString(score.getScore()) + ", ";
+			cmd += " " + Long.toString(score.getTimeToComplete()) + ", ";
+			cmd += " " + Long.toString(currentDate) + ", ";
+			cmd += " " + Double.toString(DEFAULT_RATING) + ", ";
+			cmd += " " + Boolean.toString(DEFAULT_IS_INAPPROPRIATE).toUpperCase() + " ";
+			cmd += ");";
+			state.execute(cmd);
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+	}
+	public void setInappropriate(User user, boolean isInappropriate){
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "UPDATE " + DBConstants.TP_QUIZSCORE + quizName + " ";
+			cmd += "SET " + DBConstants.T_QUIZSCORE_C_INAPPROPRIATE + " = ";
+			cmd += Boolean.toString(isInappropriate).toUpperCase() + " ";
+			cmd += "WHERE " + DBConstants.T_QUIZSCORE_C_TAKERS + " = ";
+			cmd += "\"" + user.getUserName() + "\"";
+			cmd += ";";
+			state.execute(cmd);
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+	}
+	public HashSet<User> getTakersWhoDislikeQuiz(){
+		HashSet<User> takers = new HashSet<User>();
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "SELECT " + DBConstants.T_QUIZSCORE_C_TAKERS + " ";
+			cmd += "FROM " + DBConstants.TP_QUIZSCORE + quizName + " ";
+			cmd += "WHERE " + DBConstants.T_QUIZSCORE_C_INAPPROPRIATE + " = TRUE";
+			cmd += ";";
+			
+			ResultSet rs = state.executeQuery(cmd);
+			while(rs.next()){
+				String userName = rs.getString(DBConstants.T_QUIZSCORE_C_TAKERS);
+				User user = userManager.getExistingUser(userName);
+				
+				if(user != null){
+					takers.add(user);					
+				}
+			}
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+		return takers;
+	}
+	public int getNumTakersWhoDislikeQuiz(){
+		HashSet<User> users = getTakersWhoDislikeQuiz();
+		if(users.equals(null)) return 0;
+		return users.size();
+	}
+	public void setTakerRating(User user, double rating){
+		
+		if(rating < MIN_RATING || rating > MAX_RATING){
+			rating = DEFAULT_RATING;
+		}
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "UPDATE " + DBConstants.TP_QUIZSCORE + quizName + " ";
+			cmd += "SET " + DBConstants.T_QUIZSCORE_C_RATING + " = ";
+			cmd += Double.toString(rating) + " ";
+			cmd += "WHERE " + DBConstants.T_QUIZSCORE_C_TAKERS + " = ";
+			cmd += "\"" + user.getUserName() + "\"";
+			cmd += ";";
+			
+			state.execute(cmd);
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+	}
+	public double getTakerRating(User user){
+		double rating = DEFAULT_RATING;
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "SELECT " + DBConstants.T_QUIZSCORE_C_RATING + " ";
+			cmd += "FROM " + DBConstants.TP_QUIZSCORE + quizName + " ";
+			cmd += "WHERE " + DBConstants.T_QUIZSCORE_C_TAKERS + " = ";
+			cmd += "\"" + user.getUserName() + "\"";
+			cmd += ";";
+			
+			ResultSet rs = state.executeQuery(cmd);
+			if(rs.next()){
+				rating = rs.getDouble(DBConstants.T_QUIZSCORE_C_RATING);
+			}
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+		return rating;
+	}
+	public double getAverageRating(){
+		
+		int numRatings = 0;
+		double sumRatings = 0;
+		for(User taker: getTakers()){
+			double rating = getTakerRating(taker);
+			if(rating != DEFAULT_RATING){
+				numRatings++;
+				sumRatings += rating;
+			}
+		}
+		return sumRatings/numRatings;
+	}
+	public long getDateTaken(User taker){
+		long dateTaken = DEFAULT_DATE_TAKEN;
+		
+		if(!getTakers().contains(taker)){
+			return dateTaken;
+		}
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "SELECT " + DBConstants.T_QUIZSCORE_C_DATE + " ";
+			cmd += "FROM " + DBConstants.TP_QUIZSCORE + quizName + " ";
+			cmd += "WHERE " + DBConstants.T_QUIZSCORE_C_TAKERS + " = ";
+			cmd += "\"" + taker.getUserName() + "\"";
+			cmd += "SORT BY" + DBConstants.T_QUIZSCORE_C_DATE + " DESC ";
+			cmd += ";";
+			
+			ResultSet rs = state.executeQuery(cmd);
+			if(rs.next()){
+				dateTaken = rs.getLong(DBConstants.T_QUIZSCORE_C_DATE);
+			}
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+		return dateTaken;
+		
+		
+	}
+	/*-------------------------- END PUBLIC TAKER FUNCTIONS --------------------------------*/
+	
+	
+	/*-------------------------- INITIALIZATION/DESTRUCTION FUNCTIONS ----------------------*/
+	private void initializeQuizTables(){
+		initializeMainQuizTable();
+		initializeQuizScoreTable();
+		initializeQuizTagTable();
+	}
+	private void removeQuizTables(){
+		removeMainQuizTable();
+		removeQuizScoreTable();
+		removeQuizTagTable();
+	}
+	private void initializeMainQuizTable(){
+		boolean tableExists = false;
+		
+		//If table doesn't exist, create table
+		if(!tableExists){
+			try{
+				state = (Statement) con.createStatement();	
+				String cmd = "";
+				cmd += "CREATE TABLE IF NOT EXISTS " + DBConstants.TP_QUIZ + quizName + " (";
+				cmd += DBConstants.T_QUIZ_C_QUESTIONS + " " + DBConstants.SQL_SHORT_STRING + ", ";
+				cmd += DBConstants.T_QUIZ_C_TYPE + " " + DBConstants.SQL_SHORT_STRING + ", ";
+				cmd += DBConstants.T_QUIZ_C_PROMPT + " " + DBConstants.SQL_LONG_STRING + ", ";
+				cmd += DBConstants.T_QUIZ_C_TIME + " " + DBConstants.SQL_INT + ", ";
+				cmd += DBConstants.T_QUIZ_C_PICTURE + " " + DBConstants.SQL_MEDIUM_STRING + ", ";
+				cmd += DBConstants.T_QUIZ_C_ORDERED + " " + DBConstants.SQL_BOOLEAN + " ";
+				cmd += ");";
+				
+				state.execute(cmd);				
+			}catch(SQLException ex){
+				ex.printStackTrace();
+			}	
+		}
+	}
+	private void removeMainQuizTable(){
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "DROP TABLE " + DBConstants.TP_QUIZ + quizName;
+			cmd += ";";
+			
+			state.execute(cmd);
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+	}
+	private void initializeQuizScoreTable(){
+		boolean tableExists = false;
+		
+		//If table doesn't exist, create table
+		if(!tableExists){
+			try{
+				state = (Statement) con.createStatement();	
+				String cmd = "";
+				cmd += "CREATE TABLE IF NOT EXISTS " + DBConstants.TP_QUIZSCORE + quizName + " (";
+				cmd += DBConstants.T_QUIZSCORE_C_TAKERS + " " + DBConstants.SQL_SHORT_STRING + ", ";
+				cmd += DBConstants.T_QUIZSCORE_C_SCORE + " " + DBConstants.SQL_INT + ", ";
+				cmd += DBConstants.T_QUIZSCORE_C_TIME + " " + DBConstants.SQL_INT + ", ";
+				cmd += DBConstants.T_QUIZSCORE_C_DATE + " " + DBConstants.SQL_INT + ", ";
+				cmd += DBConstants.T_QUIZSCORE_C_RATING + " " + DBConstants.SQL_DOUBLE + ", ";
+				cmd += DBConstants.T_QUIZSCORE_C_INAPPROPRIATE + " " + DBConstants.SQL_BOOLEAN + " ";
+				cmd += ");";
+				state.execute(cmd);				
+			}catch(SQLException ex){
+				ex.printStackTrace();
+			}	
+		}
+	}
+	private void removeQuizScoreTable(){
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "DROP TABLE " + DBConstants.TP_QUIZSCORE + quizName;
+			cmd += ";";
+			
+			state.execute(cmd);
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+	}
+	private void initializeQuizTagTable(){
+		boolean tableExists = false;
+		
+		//If table doesn't exist, create table
+		if(!tableExists){
+			try{
+				state = (Statement) con.createStatement();	
+				String cmd = "";
+				cmd += "CREATE TABLE IF NOT EXISTS " + DBConstants.TP_QUIZTAGS + quizName + " (";
+				cmd += DBConstants.T_QUIZTAGS_C_TAGS + " " + DBConstants.SQL_MEDIUM_STRING + " ";
+				cmd += ");";
+				state.execute(cmd);		
+			}catch(SQLException ex){
+				ex.printStackTrace();
+			}	
+		}
+	}
+	private void removeQuizTagTable(){
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "DROP TABLE " + DBConstants.TP_QUIZTAGS + quizName;
+			cmd += ";";
+			
+			state.execute(cmd);
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+	}
+	/*-------------------------- END INITIALIZATION/DESTRUCTION FUNCTIONS ------------------*/
+	
+	
+	/*-------------------------- TAG FUNCTIONS ---------------------------------------------*/
+	public HashSet<String> getTags(){
+		HashSet<String> tags = new HashSet<String>();
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "SELECT * ";
+			cmd += "FROM " + DBConstants.TP_QUIZTAGS + quizName + " ";
+			cmd += ";";
+			
+			ResultSet rs = state.executeQuery(cmd);
+			while(rs.next()){
+				String tag = rs.getString(DBConstants.T_QUIZTAGS_C_TAGS);
+				tags.add(tag);
+			}
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+		return tags;
+	}
+	public void addTag(String tag){
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "INSERT INTO " + DBConstants.TP_QUIZTAGS + quizName + " ";
+			cmd += "VALUES ";
+			cmd += "( \"" + tag + "\")";
+			cmd += ";";
+			state.execute(cmd);
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+	}
+	public void addTags(HashSet<String> tags){
+		for(String tag:tags){
+			addTag(tag);
+		}
+	}
+	public void removeTag(String tag){
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "DELETE FROM " + DBConstants.TP_QUIZTAGS + quizName + " ";
+			cmd += "WHERE " + DBConstants.T_QUIZTAGS_C_TAGS + " = ";
+			cmd += "\"" + tag + "\"";
+			cmd += ";";
+			
+			state.execute(cmd);
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+	}
+	public void removeTags(HashSet<String> tags){
+		for(String tag:tags){
+			removeTag(tag);
+		}
+	}
+	/*-------------------------- END TAG FUNCTIONS -----------------------------------------*/
+	
+
+	/*-------------------------- PROTECTED FUNCTIONS ---------------------------------------*/
+	protected void remove(){
+		//First remove all question tables corresponding to the quiz
+		ArrayList<Question> qs = getAllQuestions();
+		
+		for(Question q:qs){
+			q.remove();
+		}
+		
+		//Next remove all quiz tables
+		removeQuizTables();
+	}
+	protected void removeTaker(User user){
+		
+		//First: Remove taker from any gradedQ question
+		ArrayList<Question> qs = getAllQuestions();
+		for(Question q:qs){
+			if(q.getQuestionType() == QuestionType.GRADED){
+				GradedQ gq = (GradedQ) q;
+				gq.removeTaker(user);
+			}	
+		}
+		
+		//Second: Remove taker from all quiz scores
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "DELETE FROM " + DBConstants.TP_QUIZSCORE + quizName + " ";
+			cmd += " WHERE " + DBConstants.T_QUIZSCORE_C_TAKERS + " = ";
+			cmd += "\"" + user.getUserName() + "\" ";
+			cmd += ";";
+			state.execute(cmd);
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+	}
+	/*-------------------------- END PROTECTED FUNCTIONS -----------------------------------*/
+		
+	
+	/*-------------------------- PUBLIC GENERAL GETTERS/SETTERS ----------------------------*/
+	public long getDateCreated(){
+		long dateCreated = QuizManager.DEFAULT_DATE_CREATED;
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "SELECT " + DBConstants.T_QUIZZES_C_DATE_CREATED + " ";
+			cmd += "FROM " + DBConstants.T_QUIZZES + " ";
+			cmd += "WHERE " + DBConstants.T_QUIZZES_C_QUIZ + " = ";
+			cmd += "\"" + quizName + "\"";
+			cmd += ";";
+			
+			ResultSet rs = state.executeQuery(cmd);
+			if(rs.next()){
+				dateCreated = rs.getLong(DBConstants.T_QUIZZES_C_DATE_CREATED);
+			}
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+		return dateCreated;
+	}
+	public boolean isOnePage(){
+		boolean isOnePage = DEFAULT_IS_ONEPAGE;
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "SELECT " + DBConstants.T_QUIZZES_C_ONEPAGE + " ";
+			cmd += "FROM " + DBConstants.T_QUIZZES + " ";
+			cmd += "WHERE " + DBConstants.T_QUIZZES_C_QUIZ + " = ";
+			cmd += "\"" + quizName + "\"";
+			cmd += ";";
+			
+			ResultSet rs = state.executeQuery(cmd);
+			if(rs.next()){
+				isOnePage = rs.getBoolean(DBConstants.T_QUIZZES_C_ONEPAGE);
+			}
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+		return isOnePage;
+	}
+	public void setOnePage(boolean isOnePage){
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "UPDATE " + DBConstants.T_QUIZZES + " ";
+			cmd += "SET " + DBConstants.T_QUIZZES_C_ONEPAGE + " = ";
+			cmd += " " + Boolean.toString(isOnePage).toUpperCase() + " ";
+			cmd += "WHERE " + DBConstants.T_QUIZZES_C_QUIZ + " = ";
+			cmd += "\"" + quizName + "\"";
+			cmd += ";";
+			
+			state.execute(cmd);
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+	}
+	public boolean isPracticeEnabled(){
+		boolean isPracticeEnabled = DEFAULT_IS_PRACTICE;
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "SELECT " + DBConstants.T_QUIZZES_C_PRACTICE + " ";
+			cmd += "FROM " + DBConstants.T_QUIZZES + " ";
+			cmd += "WHERE " + DBConstants.T_QUIZZES_C_QUIZ + " = ";
+			cmd += "\"" + quizName + "\"";
+			cmd += ";";
+			
+			ResultSet rs = state.executeQuery(cmd);
+			if(rs.next()){
+				isPracticeEnabled = rs.getBoolean(DBConstants.T_QUIZZES_C_PRACTICE);
+			}
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+		return isPracticeEnabled;
+	}
+	public void setPracticeEnabled(boolean isPracticeEnabled){
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "UPDATE " + DBConstants.T_QUIZZES + " ";
+			cmd += "SET " + DBConstants.T_QUIZZES_C_PRACTICE + " = ";
+			cmd += " " + Boolean.toString(isPracticeEnabled).toUpperCase() + " ";
+			cmd += "WHERE " + DBConstants.T_QUIZZES_C_QUIZ + " = ";
+			cmd += "\"" + quizName + "\"";
+			cmd += ";";
+			
+			state.execute(cmd);
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+	}
+	public String getDescription(){
+		String description = DEFAULT_DESCRIPTION;
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "SELECT " + DBConstants.T_QUIZZES_C_DESCRIPTION + " ";
+			cmd += "FROM " + DBConstants.T_QUIZZES + " ";
+			cmd += "WHERE " + DBConstants.T_QUIZZES_C_QUIZ + " = ";
+			cmd += "\"" + quizName + "\"";
+			cmd += ";";
+			
+			ResultSet rs = state.executeQuery(cmd);
+			if(rs.next()){
+				description = rs.getString(DBConstants.T_QUIZZES_C_DESCRIPTION);
+			}
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+		return description;
+	}
+	public void setDescription(String description){
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "UPDATE " + DBConstants.T_QUIZZES + " ";
+			cmd += "SET " + DBConstants.T_QUIZZES_C_DESCRIPTION + " = ";
+			cmd += " \"" + description + "\" ";
+			cmd += "WHERE " + DBConstants.T_QUIZZES_C_QUIZ + " = ";
+			cmd += "\"" + quizName + "\"";
+			cmd += ";";
+			
+			state.execute(cmd);
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+	}
+	public boolean isRandomized(){
+		boolean isRandomized = DEFAULT_IS_RANDOMIZED;
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "SELECT " + DBConstants.T_QUIZZES_C_RANDOMIZED + " ";
+			cmd += "FROM " + DBConstants.T_QUIZZES + " ";
+			cmd += "WHERE " + DBConstants.T_QUIZZES_C_QUIZ + " = ";
+			cmd += "\"" + quizName + "\"";
+			cmd += ";";
+			
+			ResultSet rs = state.executeQuery(cmd);
+			if(rs.next()){
+				isRandomized = rs.getBoolean(DBConstants.T_QUIZZES_C_RANDOMIZED);
+			}
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+		return isRandomized;
+	}
+	public void setRandomized(boolean isRandomized){
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "UPDATE " + DBConstants.T_QUIZZES + " ";
+			cmd += "SET " + DBConstants.T_QUIZZES_C_RANDOMIZED + " = ";
+			cmd += " " + Boolean.toString(isRandomized).toUpperCase() + " ";
+			cmd += "WHERE " + DBConstants.T_QUIZZES_C_QUIZ + " = ";
+			cmd += "\"" + quizName + "\"";
+			cmd += ";";
+			
+			state.execute(cmd);
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+	}
+	public boolean isTimed(){
+		boolean isTimed = DEFAULT_IS_TIMED;
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "SELECT " + DBConstants.T_QUIZZES_C_TIMED + " ";
+			cmd += "FROM " + DBConstants.T_QUIZZES + " ";
+			cmd += "WHERE " + DBConstants.T_QUIZZES_C_QUIZ + " = ";
+			cmd += "\"" + quizName + "\"";
+			cmd += ";";
+			
+			ResultSet rs = state.executeQuery(cmd);
+			if(rs.next()){
+				isTimed = rs.getBoolean(DBConstants.T_QUIZZES_C_TIMED);
+			}
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+		return isTimed;
+	}
+	public void setTimed(boolean isTimed){
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "UPDATE " + DBConstants.T_QUIZZES + " ";
+			cmd += "SET " + DBConstants.T_QUIZZES_C_TIMED + " = ";
+			cmd += " " + Boolean.toString(isTimed).toUpperCase() + " ";
+			cmd += "WHERE " + DBConstants.T_QUIZZES_C_QUIZ + " = ";
+			cmd += "\"" + quizName + "\"";
+			cmd += ";";
+			
+			state.execute(cmd);
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+	}
+	
+	public boolean isCorrectedImmediatley(){
+		boolean isCorrectedImmediatley = DEFAULT_IS_CORRECTED_IMMEDIATLEY;
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "SELECT " + DBConstants.T_QUIZZES_C_TIMED + " ";
+			cmd += "FROM " + DBConstants.T_QUIZZES + " ";
+			cmd += "WHERE " + DBConstants.T_QUIZZES_C_QUIZ + " = ";
+			cmd += "\"" + quizName + "\"";
+			cmd += ";";
+			
+			ResultSet rs = state.executeQuery(cmd);
+			if(rs.next()){
+				isCorrectedImmediatley = rs.getBoolean(DBConstants.T_QUIZZES_C_CORRECTED_IMMEDIATLEY);
+			}
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+		return isCorrectedImmediatley;
+	}
+	public void setCorrectedImmediatley(boolean isCorrectedImmediatley){
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "UPDATE " + DBConstants.T_QUIZZES + " ";
+			cmd += "SET " + DBConstants.T_QUIZZES_C_CORRECTED_IMMEDIATLEY + " = ";
+			cmd += " " + Boolean.toString(isCorrectedImmediatley).toUpperCase() + " ";
+			cmd += "WHERE " + DBConstants.T_QUIZZES_C_QUIZ + " = ";
+			cmd += "\"" + quizName + "\"";
+			cmd += ";";
+			
+			state.execute(cmd);
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+	}
+	
+	public String getName(){
+		return quizName;
+	}
+	public QuizCategory getCategory(){
+		String catString = QuizCategory.NONE.toString();
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "SELECT " + DBConstants.T_QUIZZES_C_CATEGORY + " ";
+			cmd += "FROM " + DBConstants.T_QUIZZES + " ";
+			cmd += "WHERE " + DBConstants.T_QUIZZES_C_QUIZ + " = ";
+			cmd += "\"" + quizName + "\"";
+			cmd += ";";
+			
+			ResultSet rs = state.executeQuery(cmd);
+			if(rs.next()){
+				catString = rs.getString(DBConstants.T_QUIZZES_C_CATEGORY);
+			}
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+		return QuizCategory.fromString(catString);
+	}
+	public void setCategory(QuizCategory category){
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "UPDATE " + DBConstants.T_QUIZZES + " ";
+			cmd += "SET " + DBConstants.T_QUIZZES_C_CATEGORY + " = ";
+			cmd += " \"" + category.toString() + "\" ";
+			cmd += "WHERE " + DBConstants.T_QUIZZES_C_QUIZ + " = ";
+			cmd += "\"" + quizName + "\"";
+			cmd += ";";
+			
+			state.execute(cmd);
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+	}
+	/*-------------------------- PUBLIC GENERAL GETTERS/SETTERS ----------------------------*/
+}

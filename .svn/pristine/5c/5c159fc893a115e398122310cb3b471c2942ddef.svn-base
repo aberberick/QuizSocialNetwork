@@ -1,0 +1,168 @@
+package quiz_system;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.HashSet;
+
+import com.mysql.jdbc.Connection;
+import com.mysql.jdbc.Statement;
+
+import database.DBConstants;
+
+public class MultipleChoiceQ extends Question{
+	
+	/*
+	 * Note:
+	 * Choice Table - holds all multiple choice question choices
+	 * Solutions Table: Solutions Column - holds all correct choices
+	 */
+	
+	/*-------------------------- CONSTRUCTOR -------------------------------------------*/
+	protected MultipleChoiceQ(Connection connection, String questionName, String parentQuizName) {
+		super(connection, questionName, QuestionType.MULTIPLE_CHOICE, parentQuizName);
+	}
+	/*-------------------------- END CONSTRUCTOR ---------------------------------------*/
+	
+	
+	/*-------------------------- PUBLIC FUNCTIONS --------------------------------------*/
+	public void addChoice(String choice){
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "INSERT INTO ";
+			cmd += DBConstants.TP_QCHOICES + parentQuizName + questionName + " ";
+			cmd += " VALUE (";
+			cmd += "\"" + choice + "\"";
+			cmd += ");";
+			
+			state.execute(cmd);
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+	}
+	public int getNumChoices(){
+		int numChoices = 0;
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "SELECT COUNT(*) ";
+			cmd += "FROM " + DBConstants.TP_QCHOICES;
+			cmd += parentQuizName + questionName + " ";
+			cmd += ";";
+			
+			ResultSet rs = state.executeQuery(cmd);
+			if(rs.next()){
+				numChoices = rs.getInt(1);
+			}
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+		return numChoices;
+	}
+	public void addChoices(HashSet<String> choices){
+		for(String choice: choices){
+			addChoice(choice);
+		}
+	}
+	public HashSet<String> getChoices(){
+		HashSet<String> choices = new HashSet<String>();
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "SELECT * ";
+			cmd += "FROM " + DBConstants.TP_QCHOICES;
+			cmd += parentQuizName + questionName + " ";
+			cmd += ";";
+			
+			ResultSet rs = state.executeQuery(cmd);
+			while(rs.next()){
+				String choice = rs.getString(DBConstants.T_QCHOICES_C_CHOICES);
+				choices.add(choice);
+			}
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+		return choices;
+	}
+	public void removeChoice(String choice){
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "DELETE FROM ";
+			cmd += DBConstants.TP_QCHOICES  + parentQuizName + questionName + " ";
+			cmd += " WHERE " + DBConstants.T_QCHOICES_C_CHOICES + " = ";
+			cmd += "\"" + choice + "\" ";
+			cmd += ";";
+			state.execute(cmd);
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+	}
+	public void setSolution(String correctChoice){
+		try{
+			//Clear any previous correct choice
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "TRUNCATE TABLE ";
+			cmd += DBConstants.TP_QSOLUTIONS;
+			cmd += parentQuizName + questionName + " ";
+			cmd += ";";			
+			state.execute(cmd);
+			
+			//Add in desired correct choice
+			state = (Statement) con.createStatement();
+			cmd = "";
+			cmd += "INSERT INTO ";
+			cmd += DBConstants.TP_QSOLUTIONS + parentQuizName + questionName + " ";
+			cmd += " VALUES (";
+			cmd += "\"" + DEFAULT_CHOICE + "\", ";
+			cmd += "\"" + correctChoice + "\" ";
+			cmd += ");";
+			state.execute(cmd);
+			
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+	}
+	public String getSolution(){
+		String solution = DEFAULT_SOLUTION;
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "SELECT * ";
+			cmd += "FROM " + DBConstants.TP_QSOLUTIONS;
+			cmd += parentQuizName + questionName + " ";
+			cmd += ";";
+			
+			ResultSet rs = state.executeQuery(cmd);
+			while(rs.next()){
+				solution = rs.getString(DBConstants.T_QSOLUTIONS_C_SOLUTIONS);
+			}
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+		return solution;
+	}
+	public boolean isCorrectSolution(String guess){
+		String solution = DEFAULT_SOLUTION;
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "SELECT " + DBConstants.T_QSOLUTIONS_C_SOLUTIONS + " ";
+			cmd += "FROM " + DBConstants.TP_QSOLUTIONS;
+			cmd += parentQuizName + questionName + " ";
+			cmd += ";";
+			
+			ResultSet rs = state.executeQuery(cmd);
+			if(rs.next()){
+				solution = rs.getString(DBConstants.T_QSOLUTIONS_C_SOLUTIONS);
+			}
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+		
+		if(solution.equals(guess))return true;
+		return false;
+	}
+	/*-------------------------- END PUBLIC FUNCTIONS ----------------------------------*/
+}

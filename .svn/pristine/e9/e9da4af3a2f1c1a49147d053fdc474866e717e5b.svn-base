@@ -1,0 +1,65 @@
+<%@ page language="java" contentType="text/html; charset=ISO-8859-1"
+	pageEncoding="ISO-8859-1"%>
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+
+<title>View Quiz Score</title>
+<%@include file="refBootstrap.jsp" %>
+</head>
+
+<body>
+<%@include file="imports.jsp" %>
+<%@include file="refNavbar.jsp" %>
+<%@include file="topContainer.jsp" %>
+	<div class="jumbotron">
+        <div class="container">
+        
+<% 
+	User signedInUser = (User)session.getAttribute("signedInUser"); 
+	
+	SystemManager sm= (SystemManager)application.getAttribute("sm");
+	QuizManager qm = sm.getQuizManager();
+	UserManager um =sm.getUserManager();
+	String userName = request.getParameter("userName");
+    String quizName = request.getParameter("quizName");
+    User user = um.getExistingUser(userName);
+    
+    boolean userWantsPractice = (Boolean) session.getAttribute("userWantsPractice");
+    
+    %>
+         <h1>Quiz Score of <%= quizName %> for <%= userName %></h1>
+    
+    <%
+    if (userWantsPractice) {
+        // get score stuff from sessoin
+        int score = (Integer) session.getAttribute("score");
+        long timeElapsed = (Long) session.getAttribute("timeElapsed");
+        out.write("<p>NOTE: Quiz taken in practice mode</p>");
+        out.write("<p>Score: " + score);
+        out.write("<p>Time elapsed (ms): " + timeElapsed);          
+    }
+    else {
+        // get score stuff from quizScore object
+        QuizScore qs = (QuizScore) session.getAttribute("quizScore");
+        out.write("<p>NOTE: Quiz taken for score</p>");
+        out.write("<p>Score: " + qs.getScore());
+        out.write("<p>Quiz taken at : " + qs.getDateTaken());
+        out.write("<p>Time elapsed (ms): " + qs.getTimeToComplete());          
+        out.write("<p>score is " + qs.getScore());
+        
+        %>
+        
+        Recent Quiz Score:
+            <a href="show-quiz.jsp?quizName=<%= quizName %>"><%= quizName %></a> 
+            <%=qs.getScore() %>(<%=qs.getDateTaken() %>)
+<%
+    }
+    
+%>
+</div>
+</div>
+
+</body>
+</html>

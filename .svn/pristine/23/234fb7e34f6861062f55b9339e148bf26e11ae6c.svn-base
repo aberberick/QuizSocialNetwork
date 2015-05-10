@@ -1,0 +1,261 @@
+package quiz_system;
+
+import java.sql.Date;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.TreeMap;
+
+import user.User;
+
+public class QuizScore extends Object implements Comparable{
+	
+	/*-------------------------- PRIVATE INSTANCE VARIABLES ----------------------------*/
+	private int score = 0;
+	private long timeToComplete = 0; 
+	private User user = null;
+	private long dateTaken = 0;
+	private Quiz quiz;
+	/*-------------------------- END PRIVATE INSTANCE VARIABLES ------------------------*/
+	
+	
+	/*-------------------------- CONSTRUCTOR -------------------------------------------*/
+	public QuizScore(int score, long timeToComplete, User user){
+		this.user = user;
+		this.timeToComplete = timeToComplete;
+		this.score = score;
+		this.quiz = null;
+	}
+	/*-------------------------- END CONSTRUCTOR ---------------------------------------*/
+	
+	
+	/*-------------------------- OVERRIDEN FUNCTIONS -----------------------------------*/
+	@Override
+	public int compareTo(Object arg0) {
+		QuizScore other = (QuizScore) arg0;
+		
+		//First: Compare Scores
+		int scoreDifference = score - other.score;
+		if(scoreDifference > 0){
+			return 1;
+		}
+		else if(scoreDifference < 0){
+			return -1;
+		}
+		
+		//Second: Compare Times
+		long timeDifference = timeToComplete - other.timeToComplete;
+		if(timeDifference > 0){
+			return -1;
+		}
+		else if(timeDifference < 0){
+			return 1;
+		}
+		
+		//Third: Declare Equivalence
+		return 0;
+	}
+	@Override
+	public String toString(){
+		String str = "";
+		str += "QuizScore:";
+		str += "User  = " + user.username + ", ";
+		str += "Score = " + score + ", ";
+		str += "Time = " + timeToComplete + ", ";
+		str += "Date = " + dateTaken;
+		return str;
+	}
+	/*-------------------------- END OVERRIDDEN FUNCTIONS ------------------------------*/
+	
+	
+	/*-------------------------- PUBLIC SETTERS/GETTERS --------------------------------*/
+	public int getScore() {
+		return score;
+	}
+
+
+	public void setScore(int score) {
+		this.score = score;
+	}
+
+
+	public long getTimeToComplete() {
+		return timeToComplete;
+	}
+
+
+	public void setTimeToComplete(long timeToComplete) {
+		this.timeToComplete = timeToComplete;
+	}
+
+
+	public User getUser() {
+		return user;
+	}
+	
+	public void setUser(User user) {
+		this.user = user;
+	}
+	
+	public long getDateTaken(){
+		return dateTaken;
+	}
+	
+	public void setQuiz(Quiz quiz){
+		this.quiz = quiz;
+	}
+	
+	public Quiz getQuiz(){
+		return quiz;
+	}
+	
+	public String getHTML() {
+		String result = "";
+		result += "<h4>" + quiz.getHTML() + "</h4>";
+		result += "<p>User: " + user.getHTML() + "</p>";
+        String dText = TimeConstants.getDate(dateTaken);
+		result += "Score: " + score + " Time taken: " + timeToComplete + " (ms). Date taken: " + dText; 
+		return result;
+	}
+	
+	public String getQuizScoreDetailsHTML(){
+		String result = "";
+		result += "Quiz:" + quiz.getHTML() + " ";
+		result += "Quiz Taker: " + user.getHTML() + " ";
+        Date d = new Date(dateTaken);
+        SimpleDateFormat df = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss");
+        String dText = df.format(d);
+		result += "Score: " + score + " Time taken: " + timeToComplete + " (ms). Date taken: " + dText; 
+		return result;
+	}
+	
+	public static String getHTMLBullets(ArrayList<QuizScore> scores, int num){
+		String str = "";
+		str += "<ul>";
+		for(int i=0; i<scores.size(); i++){
+			if(num == -1 || i < num){
+				str += "<li>";
+				str += scores.get(i).getQuizScoreDetailsHTML();
+				str += "</li>";
+			}
+		}
+		str += "</ul>";
+		return str;
+	}
+	public static String getHTMLTable(ArrayList<QuizScore> scores, int num){
+		System.out.println("Number of quizzes to print = " + scores.size());
+		if(num == -1) num= scores.size();
+		
+		String str = "";
+		str += "<table border=\"1\">";
+		str += "<tr>";
+		str += "<td>";
+		str += "Quiz Name";
+		str += "</td>";
+		str += "<td>";
+		str += "Taker";
+		str += "</td>";
+		str += "<td>";
+		str += "Score";
+		str += "</td>";
+		str += "<td>";
+		str += "Time to Complete (ms)";
+		str += "</td>";	
+		str += "<td>";
+		str += "Date Taken";
+		str += "</td>";	
+		str += "</tr>";
+		
+		for(int i=0; i<scores.size(); i++){
+			str += "<tr>";
+			if(i >= num) break;
+			String rowStr = getHTMLTableRow(scores.get(i));;
+			System.out.println(rowStr);
+			str += rowStr;
+			str += "</tr>";
+		}
+		str += "</table>";
+		
+		return str;
+	}	
+	
+	public static String getHTMLTableRow(QuizScore qs){
+		String str = "";
+		str += "<td>";
+		str += qs.getQuiz().getHTML();
+		str += "</td>";
+		str += "<td>";
+		str += qs.getUser().getHTML();
+		str += "</td>";
+		str += "<td>";
+		str += qs.getScore();
+		str += "</td>";
+		str += "<td>";
+		str += qs.getTimeToComplete();
+		str += "</td>";
+		str += "<td>";
+		str += TimeConstants.getDate(qs.getDateTaken());
+		str += "</td>";
+		return str;
+	}
+	
+	/*-------------------------- END PUBLIC SETTERS/GETTERS ----------------------------*/
+	
+	
+	/*-------------------------- PROTECTED FUNCTIONS -----------------------------------*/
+	protected void setDateTaken(long date){
+		dateTaken = date;
+	}
+	/*-------------------------- END PROTECTED FUNCTIONS -------------------------------*/
+
+	/*-------------------------- PUBLIC STATIC FUNCTIONS -------------------------------*/
+	public static ArrayList<QuizScore> orderByScore(ArrayList<QuizScore> quizScores){
+		if(!quizScores.isEmpty()){
+			Collections.sort(quizScores);			
+		}
+		Collections.reverse(quizScores);
+		return quizScores;
+	}
+	public static ArrayList<QuizScore> orderByDateTaken(ArrayList<QuizScore> quizScores){
+		if(!quizScores.isEmpty()){
+			TreeMap<Long,QuizScore> dateSortedScores = new TreeMap<Long,QuizScore>();
+			for (QuizScore score:quizScores){
+				dateSortedScores.put(score.getDateTaken(), score);
+			}
+			
+			quizScores.clear();
+			
+			if(!dateSortedScores.isEmpty()){
+				Long mostRecentLeft = dateSortedScores.lastKey();
+				while(true){
+					quizScores.add(dateSortedScores.get(mostRecentLeft));
+					mostRecentLeft = dateSortedScores.lowerKey(mostRecentLeft);
+					if(mostRecentLeft == null) break;
+				}
+			}			
+		}
+		return quizScores;
+	}
+	public static ArrayList<QuizScore> orderByTimeToTake(ArrayList<QuizScore> quizScores){
+		if(!quizScores.isEmpty()){
+			TreeMap<Long,QuizScore> timeSortedScores = new TreeMap<Long,QuizScore>();
+			for (QuizScore score:quizScores){
+				timeSortedScores.put(score.getTimeToComplete(), score);
+			}
+			
+			quizScores.clear();
+			
+			if(!timeSortedScores.isEmpty()){
+				Long mostRecentLeft = timeSortedScores.lastKey();
+				while(true){
+					quizScores.add(timeSortedScores.get(mostRecentLeft));
+					mostRecentLeft = timeSortedScores.lowerKey(mostRecentLeft);
+					if(mostRecentLeft == null) break;
+				}
+			}			
+		}
+		return quizScores;
+	}
+	/*-------------------------- END PUBLIC STATIC FUNCTIONS ---------------------------*/
+
+}

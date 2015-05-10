@@ -1,0 +1,45 @@
+<%@ page language="java" contentType="text/html; charset=ISO-8859-1"
+    pageEncoding="ISO-8859-1"%>
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<title>All Quizzes</title>
+<%@include file="refBootstrap.jsp" %>
+</head>
+
+<body>
+<%@include file="imports.jsp" %>
+<%@include file="refNavbar.jsp" %>
+
+   <div class="jumbotron">
+       <div class="container">
+            <h1>All Quizzes</h1>
+     <% 
+    SystemManager sm = (SystemManager)application.getAttribute("sm");
+    QuizManager quizManager = sm.getQuizManager();
+    ArrayList<Quiz> quizzes = quizManager.getAllQuizzes();
+                            
+     if (quizzes.size() == 0) {
+         out.write("<p>No quizzes at this time.</p>");
+     }
+     
+     // display quiz links
+     for (int i = quizzes.size()-1; i >= 0; i--) {
+    	 Quiz q = quizzes.get(i);
+    	 out.write("<h2>" + q.getName() + "</h2>");
+    	 Date d = new Date(q.getDateCreated());
+         SimpleDateFormat df = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss Z");
+         String dText = df.format(d);
+
+    	 out.write("<p>Date created: " + dText + "</p>");
+         %>
+         <p><a href="quizSummary.jsp?quizName=<%= q.getName() %>">Take Quiz</a></p>
+         <%
+     }
+     %>
+        </div>
+        </div>
+</body>
+</html>
+

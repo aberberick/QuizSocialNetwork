@@ -1,0 +1,131 @@
+package quiz_system;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.HashSet;
+
+import javax.swing.undo.UndoManager;
+
+import com.mysql.jdbc.Connection;
+import com.mysql.jdbc.Statement;
+
+import database.DBConstants;
+
+public class PictureResponseQ extends Question{
+		
+	/*-------------------------- CONSTRUCTOR -------------------------------------------*/
+	protected PictureResponseQ(Connection connection, String questionName, String parentQuizName) {
+		super(connection, questionName, QuestionType.PICTURE_RESPONSE, parentQuizName);
+	}
+	/*-------------------------- END CONSTRUCTOR ---------------------------------------*/
+	
+	
+	/*-------------------------- PUBLIC FUNCTIONS --------------------------------------*/
+	public void setPicture(String picturePath){
+
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "UPDATE " + DBConstants.TP_QUIZ + parentQuizName + " ";
+			cmd += "SET " + DBConstants.T_QUIZ_C_PICTURE + " = ";
+			cmd += "\"" + picturePath + "\" ";
+			cmd += "WHERE " + DBConstants.T_QUIZ_C_QUESTIONS + " = ";
+			cmd += "\"" + questionName + "\"";
+			cmd += ";";
+			
+			state.execute(cmd);
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+	}
+	public String getPicture(){
+		String picture = DEFAULT_PICTURE_PATH;
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "SELECT " + DBConstants.T_QUIZ_C_PICTURE + " ";
+			cmd += "FROM " + DBConstants.TP_QUIZ + parentQuizName + " ";
+			cmd += "WHERE " + DBConstants.T_QUIZ_C_QUESTIONS + " = ";
+			cmd += " \"" + questionName + "\" ";
+			cmd += ";";
+			
+			ResultSet rs = state.executeQuery(cmd);
+			if(rs.next()){
+				picture = rs.getString(DBConstants.T_QUIZ_C_PICTURE);
+			}
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+		return picture;
+	}
+	public void addSolution(String solution){
+		//Add a new quiz with the name
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "INSERT INTO ";
+			cmd += DBConstants.TP_QSOLUTIONS + parentQuizName + questionName + " ";
+			cmd += " VALUES (";
+			cmd += "\"" + DEFAULT_CHOICE + "\", ";
+			cmd += "\"" + solution + "\" ";
+			cmd += ");";
+			state.execute(cmd);
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+	}
+	public void addSolutions(HashSet<String> solutions){
+		for(String sol:solutions){
+			addSolution(sol);
+		}
+	}
+	public HashSet<String> getSolutions(){
+		HashSet<String> solutions = new HashSet<String>();
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "SELECT " + DBConstants.T_QSOLUTIONS_C_SOLUTIONS + " ";
+			cmd += "FROM " + DBConstants.TP_QSOLUTIONS;
+			cmd += parentQuizName + questionName + " ";
+			cmd += ";";
+			
+			ResultSet rs = state.executeQuery(cmd);
+			while(rs.next()){
+				String solution = rs.getString(DBConstants.T_QSOLUTIONS_C_SOLUTIONS);
+				solutions.add(solution);
+			}
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+		return solutions;
+	}
+	public void removeSolution(String solution){
+		try{
+			state = (Statement) con.createStatement();
+			String cmd = "";
+			cmd += "DELETE FROM ";
+			cmd += DBConstants.TP_QSOLUTIONS + parentQuizName + questionName + " ";
+			cmd += " WHERE " + DBConstants.T_QSOLUTIONS_C_SOLUTIONS + " = ";
+			cmd += "\"" + solution + "\" ";
+			cmd += ";";
+			state.execute(cmd);
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		}
+	}
+	public void clearAllSolutions(){
+		HashSet<String> solutions = getSolutions();
+		for(String sol:solutions){
+			removeSolution(sol);
+		}
+	}
+	public boolean isSolution(String guess){
+		HashSet<String> solutions = getSolutions();
+		for(String sol:solutions){
+			if(sol.equals(guess)) return true;
+		}
+		return false;
+	}
+
+	/*-------------------------- END PUBLIC FUNCTIONS ----------------------------------*/
+}

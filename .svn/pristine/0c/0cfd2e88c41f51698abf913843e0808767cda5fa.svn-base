@@ -1,0 +1,236 @@
+package quiz_system.test;
+
+import static org.junit.Assert.*;
+
+import java.security.NoSuchAlgorithmException;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
+import quiz_system.Quiz;
+import quiz_system.QuizCategory;
+import quiz_system.QuizManager;
+import quiz_system.QuizScore;
+import system.SystemManager;
+import user.User;
+import user.UserManager;
+
+import com.mysql.jdbc.Connection;
+import com.mysql.jdbc.Statement;
+
+
+public class QuizTest {
+	/*-------------------------- CONSTANTS ---------------------------------------------*/
+	public static final int NUM_CREATORS = 1;
+	public static final int NUM_QUIZZES = 2;
+	public static final int NUM_TAKERS = 10;
+	/*-------------------------- END CONSTANTS -----------------------------------------*/
+	
+	
+	/*-------------------------- PRIVATE INSTANCE VARIABLES ----------------------------*/
+	private SystemManager sm;
+	private UserManager um;
+	private QuizManager qm;
+	
+	private Connection con;
+	private ResultSet rs;
+	private Statement state;	
+	/*-------------------------- END PRIVATE INSTANCE VARIABLES ------------------------*/
+	
+	
+	/*-------------------------- INITIALIZATION/DESTRUCTION FUNCTIONS ------------------*/
+	@Before
+	public void initializeTests() throws SQLException{
+		System.out.println("Start Quiz Test");
+		System.out.println("Initialization Sequence");
+	
+		sm = new SystemManager();
+		um = sm.getUserManager();
+		qm = sm.getQuizManager();
+		
+		addUsers();
+		addQuizzesAndScores();
+		System.out.println("End Initialization Sequence\n");
+	}
+	@After
+	public void destroyTests() throws SQLException{
+		
+		System.out.println("\nEnding Sequence");
+		sm.deleteEverything();
+		sm.closeDatabaseConnection();
+		System.out.println("End Quiz Test");
+	}	
+	private void addUsers(){
+		try{
+			for(int index = 0; index<NUM_CREATORS; index++){
+				um.createUser(TConst.TEST_USER_NAME.get(index),
+						TConst.TEST_USER_PASSWORD.get(index));
+			}
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		} catch (NoSuchAlgorithmException e) {
+			e.printStackTrace();
+		}
+	}
+	private void addQuizzesAndScores() throws SQLException{
+		for(int user = 0; user<NUM_CREATORS; user++){
+			String username = TConst.TEST_USER_NAME.get(user);
+			addQuizzesAndScores(username);
+		}
+	}
+	private void addQuizzesAndScores(String creator) throws SQLException{
+		for(int quiz = 0; quiz<NUM_QUIZZES; quiz++){
+			String quizName = creator + TConst.TEST_QUIZ_NAME.get(quiz);
+			QuizCategory category = TConst.TEST_QUIZ_CATEGORY.get(quiz);
+			boolean onePage = TConst.TEST_QUIZ_ONEPAGE.get(quiz);
+			boolean practice = TConst.TEST_QUIZ_PRACTICE.get(quiz);
+			String description = TConst.TEST_QUIZ_DESCRIPTION.get(quiz);
+			boolean timed = TConst.TEST_QUIZ_TIMED.get(quiz);
+			boolean randomized = TConst.TEST_QUIZ_RANDOMIZED.get(quiz);
+			boolean ordered = TConst.TEST_QUIZ_ORDERED.get(quiz);
+			boolean correctedImmediately = TConst.TEST_QUIZ_CORRECTED_IMMEDIATELY.get(quiz);
+			long timeToTake = TConst.TEST_QUIZ_TIME_TO_TAKE.get(quiz);
+			
+			Quiz q = qm.createAndAddQuiz(category, quizName, um.getExistingUser(creator));
+		
+			q.setCategory(category);
+			q.setOnePage(onePage);
+			q.setPracticeEnabled(practice);
+			q.setDescription(description);
+			q.setTimed(timed);
+			q.setRandomized(randomized);
+			q.setCorrectedImmediatley(correctedImmediately);
+			q.setTimeToTake(timeToTake);
+			
+			addScoresToQuiz(q);
+			addTagsToQuiz(q);
+		}	
+	}
+	private void addScoresToQuiz(Quiz quiz) throws SQLException{
+		for(int taker=0; taker<NUM_TAKERS; taker++){
+			User u = um.getExistingUser(TConst.TEST_USER_NAME.get(taker));
+			int score = TConst.TEST_QSCORE_SCORE.get(taker);
+			long time = TConst.TEST_QSCORE_TIME.get(NUM_TAKERS - 1 -taker);
+			
+			QuizScore qs = new QuizScore(score,time,u);
+			quiz.addScore(qs);
+			quiz.setInappropriate(u, TConst.TEST_QSCORE_INAPPROPRIATE.get(taker));
+			quiz.setTakerRating(u, TConst.TEST_QSCORE_RATING.get(taker));
+		}
+	}
+	private void addTagsToQuiz(Quiz quiz){
+		for(String tag: TConst.TEST_QTAGS){
+			quiz.addTag(tag);
+		}
+	}
+	/*-------------------------- INITIALIZATION/DESTRUCTION FUNCTIONS ------------------*/
+	
+	
+	/*-------------------------- TEST FUNCTIONS ----------------------------------------*/
+	@Test 
+	public void testQuiz() throws SQLException{
+		String quizName;
+		String username;
+		Quiz q;
+		User u;
+		ArrayList<Quiz> quizzes;
+		
+		quizzes = qm.getAllQuizzes();
+		for(Quiz quiz:quizzes){
+			//System.out.println(quiz.scoresToString());
+			assertEquals(quiz.getNumTakers(),NUM_TAKERS);
+			assertEquals(quiz.getNumScores(), NUM_TAKERS);
+			assertEquals((Integer)quiz.getHighScore().getScore(),(Integer)getMaxValue(TConst.TEST_QSCORE_SCORE,NUM_TAKERS));
+			assertEquals((Integer)quiz.getLowestScore().getScore(),(Integer)getMinValue(TConst.TEST_QSCORE_SCORE,NUM_TAKERS));
+			assertEquals(quiz.getNumTakersWhoDislikeQuiz(),5);
+			Double rating = quiz.getAverageRating();
+			assert(rating.equals((Double) 5.5));
+			
+			quiz.setOnePage(true);
+			assert(quiz.isOnePage());
+			quiz.setOnePage(false);
+			assert(!quiz.isOnePage());
+			
+			quiz.setRandomized(true);
+			assert(quiz.isRandomized());
+			quiz.setRandomized(false);
+			assert(!quiz.isRandomized());
+			
+			quiz.setPracticeEnabled(true);
+			assert(quiz.isPracticeEnabled());
+			quiz.setPracticeEnabled(false);
+			assert(!quiz.isPracticeEnabled());
+
+			quiz.setTimeToTake((long) 10);
+			assertEquals(quiz.getTimeToTake(),(long) 10);
+			quiz.setTimeToTake((long) 100);
+			assertEquals(quiz.getTimeToTake(),(long) 100);
+			
+			quiz.setCorrectedImmediatley(true);
+			assert(quiz.isCorrectedImmediatley());
+			quiz.setCorrectedImmediatley(false);
+			assert(!quiz.isCorrectedImmediatley());
+			
+			quiz.setCategory(QuizCategory.NONE);
+			assertEquals(QuizCategory.NONE.toString(), quiz.getCategory().toString());
+			quiz.setCategory(QuizCategory.ENGLISH);
+			assertEquals(QuizCategory.ENGLISH.toString(), quiz.getCategory().toString());
+			
+			quiz.setDescription("SAMPLE DESCRIPTION1");
+			assertEquals("SAMPLE DESCRIPTION1", quiz.getDescription());
+			quiz.setDescription("SAMPLE DESCRIPTION2");
+			assertEquals("SAMPLE DESCRIPTION2", quiz.getDescription());
+			
+			quiz.setTimed(true);
+			assert(quiz.isTimed());
+			quiz.setTimed(false);
+			assert(!quiz.isTimed());
+			
+			assert(TConst.TEST_QTAGS.equals(quiz.getTags()));
+			
+			System.out.println(quiz.scoresToString());
+		}
+		
+		System.out.println(qm.quizzesToString());
+	}
+	/*-------------------------- END TEST FUNCTIONS ------------------------------------*/
+	
+	
+	/*-------------------------- PRIVATE HELPER FUNCTIONS ------------------------------*/
+	private void printQuizzes(String title, ArrayList<Quiz> quizzes){
+		System.out.println(title);
+		for(Quiz q: quizzes){
+			System.out.println(q.toString());
+		}
+	}
+	private void printScores(String title, ArrayList<QuizScore> scores){
+		for (QuizScore score:scores){
+			System.out.println(score.toString());
+		}
+	}
+	private int getMaxValue(List<Integer> numbers, int numElements){
+		int maxNumber = numbers.get(0);
+		for(int index = 0; index<numElements; index++){
+			if(numbers.get(index) > maxNumber){
+				maxNumber = numbers.get(index);
+			}
+		}
+		return maxNumber;
+	}
+	private int getMinValue(List<Integer> numbers, int numElements){
+		int minNumber = numbers.get(0);
+		for(int index = 0; index<numElements; index++){
+			if(numbers.get(index) < minNumber){
+				minNumber = numbers.get(index);
+			}
+		}
+		return minNumber;
+	}
+	/*-------------------------- END PRIVATE HELPER FUNCTIONS --------------------------*/
+}

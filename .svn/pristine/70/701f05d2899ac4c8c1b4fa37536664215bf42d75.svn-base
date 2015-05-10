@@ -1,0 +1,107 @@
+package quiz_system.test;
+
+import java.security.NoSuchAlgorithmException;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
+import quiz_system.Quiz;
+import quiz_system.QuizCategory;
+import quiz_system.QuizManager;
+import system.SystemManager;
+import user.UserManager;
+
+import com.mysql.jdbc.Connection;
+import com.mysql.jdbc.Statement;
+
+
+public class QuizManagerTest {
+	
+	
+	/*-------------------------- PRIVATE INSTANCE VARIABLES ----------------------------*/
+	private SystemManager sm;
+	private UserManager um;
+	private QuizManager qm;
+	
+	private Connection con;
+	private ResultSet rs;
+	private Statement state;	
+	/*-------------------------- END PRIVATE INSTANCE VARIABLES ------------------------*/
+	
+	
+	/*-------------------------- INITIALIZATION/DESTRUCTION FUNCTIONS ------------------*/
+	@Before
+	public void initializeTests() throws SQLException{
+		sm = new SystemManager();
+		um = sm.getUserManager();
+		qm = sm.getQuizManager();
+		addUsers();
+		addQuizzes();
+	}
+	
+	
+	@After
+	public void destroyTests() throws SQLException{
+		sm.deleteEverything();
+		sm.closeDatabaseConnection();
+	}	
+	
+	private void addUsers(){
+		try{
+			for(int index = 0; index<TestConstants.TEST_USER_NAME.size(); index++){
+				um.createUser(TestConstants.TEST_USER_NAME.get(index),
+						TestConstants.TEST_USER_PASSWORD.get(index));
+			}
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		} catch (NoSuchAlgorithmException ex) {
+			ex.printStackTrace();
+		}
+	}
+	
+	private void addQuizzes() throws SQLException{
+		for(int user = 0; user<1; user++){
+			String username = TestConstants.TEST_USER_NAME.get(user);
+			addQuizzesForUser(username);
+		}
+	}
+	
+	private void addQuizzesForUser(String username) throws SQLException{
+		for(int quiz = 0; quiz<TestConstants.TEST_QUIZ_NAME.size(); quiz++){
+			String quizName = username + TestConstants.TEST_QUIZ_NAME.get(quiz);
+			QuizCategory category = TestConstants.TEST_QUIZ_CATEGORY.get(quiz);
+			boolean onePage = TestConstants.TEST_QUIZ_ONEPAGE.get(quiz);
+			boolean practice = TestConstants.TEST_QUIZ_PRACTICE.get(quiz);
+			String description = TestConstants.TEST_QUIZ_DESCRIPTION.get(quiz);
+			boolean timed = TestConstants.TEST_QUIZ_TIMED.get(quiz);
+			boolean randomized = TestConstants.TEST_QUIZ_RANDOMIZED.get(quiz);
+			boolean ordered = TestConstants.TEST_QUIZ_ORDERED.get(quiz);
+			
+			Quiz q = qm.createAndAddQuiz(category, quizName, um.getExistingUser(username));
+		
+			q.setCategory(category);
+			q.setOnePage(onePage);
+			q.setPracticeEnabled(practice);
+			q.setDescription(description);
+			q.setTimed(timed);
+			q.setRandomized(randomized);
+			System.out.println(quiz);
+		}	
+	}
+	/*-------------------------- INITIALIZATION/DESTRUCTION FUNCTIONS ------------------*/
+	
+	
+	/*-------------------------- TEST FUNCTIONS ----------------------------------------*/
+	@Test
+	public void testQuizManagerCreate(){
+		assert(true);
+	}	
+	/*-------------------------- END TEST FUNCTIONS ------------------------------------*/
+	
+
+	
+
+}

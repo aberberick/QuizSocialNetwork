@@ -1,0 +1,81 @@
+<%@ page language="java" contentType="text/html; charset=ISO-8859-1"
+    pageEncoding="ISO-8859-1"%>
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<title>Create New Quiz</title>
+<%@include file="refBootstrap.jsp" %>
+</head>
+
+<body>
+<%@include file="imports.jsp" %>
+<%@include file="refNavbar.jsp" %>
+
+    <div class="jumbotron">
+        <div class="container">
+             <h1>
+                <%= (String) session.getAttribute("quizName") %>
+            </h1>
+            <% 
+            // get quizTaken, quizName, and Username.
+            boolean quizTaken = (Boolean) session.getAttribute("quizTaken"); 
+            boolean questionTaken = (Boolean) session.getAttribute("questionTaken");
+            String quizName = (String) session.getAttribute("inProgressQuiz");
+            String userName = (String) session.getAttribute("userName");
+            if (quizTaken) {
+                out.write("<p>Hey "
+                        + userName
+                        + ", it looks like the quiz name " 
+                        + quizName 
+                        + " is already taken. Click <a href=\"createQuiz0.jsp\">here</a> to try a different name.</p>");
+            }
+            else {
+            	if (questionTaken) {
+            		out.write("<p>Question name taken. Need to try again!</p>");
+            	}
+            	// PROMPT FOR QUESTIONS
+            	out.write("<p>Second, <strong>select a question type</strong>.</p>");
+            	out.write("<p><form action=\"CreateQuizServlet1\" method=\"post\">");
+            	out.write("<select name=\"qType\">");
+            	out.write("<option value=\"response\">Response</option>");
+                out.write("<option value=\"fillintheblank\">Fill in the Blank</option>");
+                out.write("<option value=\"multiplechoice\">Multiple Choice</option>");
+                out.write("<option value=\"picture\">Picture Response</option>");
+                out.write("<option value=\"matching\">Matching</option>");
+                out.write("<option value=\"multiplechoiceanswer\">Multiple Choice Answer</option>");
+            	out.write("</select><br />");
+            	out.write("<input type=\"submit\" class=\"btn btn-primary\" value=\"Submit &raquo;\">");
+            	out.write("</form>");
+            	
+            	
+            }
+            %>
+        </div>
+    </div>
+    <% 
+    // DISPLAY QUIZ SO FAR
+    // check quiz name
+    // get context, get session
+    SystemManager sm = (SystemManager)application.getAttribute("sm");
+    QuizManager quizManager = sm.getQuizManager();
+    Quiz q = quizManager.getQuiz(quizName);
+    ArrayList<Question> questions = q.getAllQuestions();
+            				
+     if (questions.size() == 0) {
+    	 out.write("<p>No questions in " + quizName + " at this time.</p>");
+     }
+     for (int i = 0; i < questions.size(); i++) {
+         String questionI = questions.get(i).toString();
+         out.write("<p>" + questionI + "</p>");
+     }
+ 
+    // INSERT DONE BUTTON
+    out.write("<i>DONE BUTTON GOES HERE.</i>");
+    %>
+    <p><a href="show-quiz.jsp?id=<%=quizName%>" class="btn btn-lg btn-success">Complete Quiz</a></p>
+    
+    <%@include file="usernameHTML.jsp" %>
+    
+</body>
+</html>

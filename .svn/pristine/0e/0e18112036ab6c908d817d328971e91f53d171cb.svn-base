@@ -1,0 +1,52 @@
+<%@ page language="java" contentType="text/html; charset=ISO-8859-1"
+    pageEncoding="ISO-8859-1"%>
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<title>Inbox</title>
+<%@ page import="user.User"%>
+
+<%@ page import="user.UserManager"%>
+<%@ page import="message.Mailman"%>
+<%@ page import="system.SystemManager"%>
+<%@ page import="quiz_system.QuizManager"%>
+<%@ page import="quiz_system.Quiz"%>
+
+<!--  Meta Data -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<!--  Bootstrap CSS -->
+<!-- Latest compiled and minified CSS -->
+<link rel="stylesheet"
+	href="//netdna.bootstrapcdn.com/bootstrap/3.0.2/css/bootstrap.min.css">
+
+<!--  Optional theme -->
+<link rel="stylesheet"
+	href="//netdna.bootstrapcdn.com/bootstrap/3.0.2/css/bootstrap-theme.min.css">
+
+ <!-- Latest compiled and minified JavaScript  -->
+<script
+	src="//netdna.bootstrapcdn.com/bootstrap/3.0.2/js/bootstrap.min.js"></script>
+
+</head>
+<body>
+<h1>Message Central</h1>
+<% SystemManager sm = (SystemManager)application.getAttribute("sm");
+User user = (User)application.getAttribute("signedInUser"); 
+Mailman mailMan=sm.getMailman();%><!--
+int numFriendRequests=mailMan.getFriendRequests(user);
+--><!--
+TODO: add numbers for friend req's and textmessages'
+--><a href="friendRequests.jsp"> Friend Requests ()</a>
+<a href="textMessages.jsp"> Text Messages ()</a>
+<a href="quizChallenges.jsp"> Quiz Challenges ()</a>
+
+<a href="createMessage.jsp"> Create a Message</a>
+<a href="createQuizChallenge.jsp"> Make a Quiz Challenge</a>
+<a href="createFriendRequest.jsp"> Send a Friend Request</a>
+
+
+</body>
+</html>

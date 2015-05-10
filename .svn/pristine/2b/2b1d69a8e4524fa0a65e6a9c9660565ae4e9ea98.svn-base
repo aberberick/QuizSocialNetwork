@@ -1,0 +1,101 @@
+<%@ page language="java" contentType="text/html; charset=ISO-8859-1"
+    pageEncoding="ISO-8859-1"%>
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>Question Creation</title>
+<%@ page import="user.User"%>
+<%@ page import="user.UserManager"%>
+<%@ page import="message.*"%>
+<%@ page import="system.SystemManager"%>
+<%@ page import="quiz_system.QuizManager"%>
+<%@ page import="quiz_system.Quiz"%>
+<%@include file="refBootstrap.jsp" %>
+</head>
+
+<body>
+<%@include file="refNavbar.jsp" %>
+
+    <div class="jumbotron">
+        <div class="container">
+            <h1>Create Question for <%= (String)session.getAttribute("quizName") %></h1>
+            <p>Third, <strong>enter your question information.</strong></p>
+             <h2>
+                <%= (String) session.getAttribute("qType") %>
+            </h2>
+            <% 
+            String qType = (String) session.getAttribute("qType");
+            if (qType.equals("response")) {
+                out.write("<p><form action=\"CreateQuizServlet2\" method=\"post\">");
+                out.write("Question title: <input name=\"qtitle\" size=\"70\"></input><br />");
+                out.write("Question prompt: <input name=\"qprompt\" size=\"70\"></input><br />");
+                out.write("Question answer: <input name=\"qanswer\" size=\"70\"></input><br/>");
+                out.write("<input name=\"qType\" type=\"hidden\" value=\"response\"></input>");
+                out.write("<br />");
+                out.write("<input type=\"submit\" class=\"btn btn-primary\" value=\"Submit &raquo;\">");
+                out.write("</form>");
+            }
+           	else if (qType.equals("fillintheblank")) {
+           		out.write("<p>Write your questions as \"fill in the ______\" with the underscores indicating your blank.");
+                out.write("<p><form action=\"CreateQuizServlet2\" method=\"post\">");
+                out.write("Question title: <input name=\"qtitle\" size=\"70\"></input><br />");
+                out.write("Question prompt: <input name=\"qprompt\" size=\"70\"></input><br />");
+                out.write("Question answer: <input name=\"qanswer\" size=\"70\"></input><br/>");
+                out.write("<input name=\"qType\" type=\"hidden\" value=\"fillintheblank\"></input>");
+                out.write("<br />");
+                out.write("<input type=\"submit\" class=\"btn btn-primary\" value=\"Submit &raquo;\">");
+                out.write("</form>");
+
+           	}
+           	else if (qType.equals("multiplechoice")) {
+                out.write("<p><form action=\"CreateQuizServlet2\" method=\"post\">");
+                out.write("Question title: <input name=\"qtitle\" size=\"70\"></input><br />");
+                out.write("Question prompt: <input name=\"qprompt\" size=\"70\"></input><br />");
+                out.write("Question option 1: <input name=\"qa1\" size=\"70\"></input><br/>");
+                out.write("Question option 2: <input name=\"qa2\" size=\"70\"></input><br/>");
+                out.write("Question option 3: <input name=\"qa3\" size=\"70\"></input><br/>");
+                out.write("Question option 4: <input name=\"qa4\" size=\"70\"></input><br/>");
+                out.write("Which is the correct answer?<br />");
+                out.write("<select name=\"qanswer\">");
+                out.write("<option value=\"1\">1</option>");
+                out.write("<option value=\"2\">2</option>");
+                out.write("<option value=\"3\">3</option>");
+                out.write("<option value=\"4\">4</option>");
+                out.write("</select><br />");
+                out.write("<input name=\"qType\" type=\"hidden\" value=\"multiplechoice\"></input>");
+                out.write("<input type=\"submit\" class=\"btn btn-primary\" value=\"Submit &raquo;\">");
+                out.write("</form>");
+           	}
+           	else if (qType.equals("picture")) {
+           		// TODO add this
+                out.write("Question title: <input name=\"qtitle\" size=\"70\"></input><br />");
+                out.write("<input name=\"qType\" type=\"hidden\" value=\"picture\"></input>");
+
+           	}
+           	else if (qType.equals("matching")) {
+           		// TODO add this
+                out.write("Question title: <input name=\"qtitle\" size=\"70\"></input><br />");
+                out.write("<input name=\"qType\" type=\"hidden\" value=\"matching\"></input>");
+
+           	}
+          
+           	else if (qType.equals("multiplechoiceanswer")) {
+           		// TODO add this
+           	    out.write("Question title: <input name=\"qtitle\" size=\"70\"></input><br />");
+                out.write("<input name=\"qType\" type=\"hidden\" value=\"multiplechoiceanswer\"></input>");
+
+           	}
+            else {
+                out.write("<p>Something went wrong.</p>");
+            }
+            // TODO make servlet 2. that will process a questions and attempt to add it.
+            // then it redirects back to createQuiz1, which should attempt to display the quiz so far...
+            // there should also be a complete quiz button. then the quiz is stored and we
+            // go to the homepage or some shit....
+            %>
+        </div>
+    </div>
+        <%@include file="usernameHTML.jsp" %>
+    
+</body>
+</html>

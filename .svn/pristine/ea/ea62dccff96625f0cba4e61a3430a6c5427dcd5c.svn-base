@@ -1,0 +1,81 @@
+<%@ page language="java" contentType="text/html; charset=ISO-8859-1"
+	pageEncoding="ISO-8859-1"%>
+    <%@ page import="user.*"%>
+    <%@ page import="java.util.*"%>
+    <%@ page import="message.*"%>
+<%@ page import="system.SystemManager"%>
+<%@ page import="quiz_system.QuizManager"%>
+<%@ page import="quiz_system.Quiz"%>
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<!--  Meta Data -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<!--  Bootstrap CSS -->
+<!-- Latest compiled and minified CSS -->
+<link rel="stylesheet"
+	href="//netdna.bootstrapcdn.com/bootstrap/3.0.2/css/bootstrap.min.css">
+
+<!--  Optional theme -->
+<link rel="stylesheet"
+	href="//netdna.bootstrapcdn.com/bootstrap/3.0.2/css/bootstrap-theme.min.css">
+
+<!-- Latest compiled and minified JavaScript  -->
+<script
+	src="//netdna.bootstrapcdn.com/bootstrap/3.0.2/js/bootstrap.min.js"></script>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<title>Send a Friend Request</title>
+</head>
+<body>
+<%@include file="refNavbar.jsp" %>
+	<div class="jumbotron">
+        <div class="container">
+<%User user = (User)session.getAttribute("signedInUser"); 
+ArrayList<User> friendList=user.getFriendList();
+SystemManager sm= (SystemManager)application.getAttribute("sm");
+Mailman mailMan = sm.getMailman();
+UserManager um = sm.getUserManager();
+HashSet<String> users = um.getAllUsers();
+HashSet<String> dontRequestNames=new HashSet<String>();
+HashSet<String> potentialFriends=new HashSet<String>();
+
+//make nameFriendList
+for(int i=0; i<friendList.size(); i++) {
+	dontRequestNames.add(friendList.get(i).getUserName());
+}
+dontRequestNames.add(user.getUserName());
+for(String potentialFriend: users) {
+	if(!(dontRequestNames.contains(potentialFriend))) {
+		potentialFriends.add(potentialFriend);
+	}
+}
+
+%>
+<form action="CreateFriendRequestServlet" method="post">
+
+
+
+Friend's User Name:<br />
+
+<select name="friendUserName">
+
+<% for(String friendUserName: potentialFriends) {%>
+	<option value= "<%= friendUserName %>"> <%=friendUserName %> </option><%
+}
+%>
+
+</select>
+Message
+
+<input type="text" name="text"> <br /> 
+
+<br />
+<input type="submit" class="btn btn-primary btn-lg"
+	value="Send &raquo;"></form>
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en-US">
+
+<%@ page import="java.util.*"%>
+
+<%@ page import="user.User"%>
+
+<%@ page import="user.UserManager"%>
+<%@ page import="message.Mailman"%>
+<%@ page import="message.FriendRequest"%>
+<%@ page import="message.ChallengeRequest"%>
+<%@ page import="message.Message"%>
+<%@ page import="system.SystemManager"%>
+<%@ page import="quiz_system.QuizManager"%>
+<%@ page import="quiz_system.Quiz"%>
+
+<head>
+<title>TST Quiz Website Homepage</title>
+<%@include file="refBootstrap.jsp" %>
+</head>
+
+<body>
+<%@include file="refNavbar.jsp" %>
+<div class="jumbotron">
+<div class="container">
+
+<h1>Home</h1>
+<%
+SystemManager sm = (SystemManager)application.getAttribute("sm");
+User user = (User)session.getAttribute("signedInUser"); 
+Mailman mailMan=sm.getMailman();
+//int numMessages=(mailMan.getFriendRequests(user).size() + mailMan.getChallenges(user).size() + mailMan.getTextMessages(user).size());
+
+	ArrayList<User> friendList=user.getFriendList();
+	
+	int numFriendRequests=mailMan.getFriendRequests(user).size();
+	int numChallengeRequests=mailMan.getChallengeRequests(user).size();
+	int numTextMessages=mailMan.getTextMessages(user).size();
+	int numMessages = numFriendRequests + numChallengeRequests + numTextMessages;
+	
+	QuizManager quizManager=sm.getQuizManager();
+	long currentTime=System.currentTimeMillis();
+	ArrayList<Quiz> recentQuizzes= quizManager.getRecentlyCreatedQuizzes(currentTime);
+//	ArrayList<Quiz> popularQuizzes= quizManager.getMostPopularQuizzes(currentTime);
+
+%>
+
+<p>User name: <%=user.getUserName() %> <br>
+<a href="inbox.jsp"> Inbox (<%=numMessages %>)</a> <br>
+Friend List:
+<ul>
+	<% for(int i=0; i<friendList.size(); i++) { 
+		String friendUserName=friendList.get(i).getUserName();
+	%><li><a href="UserServlet?name=<%= friendUserName %>">
+	<%= friendUserName %></a> <%} %>
+	
+</ul>
+</p>
+
+
+
+
+
+<p>Recent Quizzes: <ul>
+<% 
+for(int i=0; i<recentQuizzes.size() && i<10; i++) {
+	String quizName=recentQuizzes.get(i).getName();
+	%> <li> <a href="QuizServlet?quizName=<%= quizName %>"> <%= quizName %></a>
+<% }
+
+
+%>
+</ul>
+<p>Popular Quizzes: (n/a right now)<ul>
+
+
+
+
+</ul>
+
+
+<br>
+<a href="createQuiz0.jsp"> Create a Quiz</a>
+<br>
+<a href="allUsers.jsp"> View all Users</a>
+<br>
+
+<form action="CreateAdminServlet" method="post">
+<input type="Submit" value= "Become an Administrator" />
+</form>
+
+</p>
+
+</div>
+</div>
+</body>
+</html>

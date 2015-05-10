@@ -1,0 +1,90 @@
+<%@ page language="java" contentType="text/html; charset=ISO-8859-1"
+	pageEncoding="ISO-8859-1"%>
+	<%@ page import="user.*"%>
+	<%@ page import="system.*"%>
+	<%@ page import="message.*"%>
+	<%@ page import="quiz_system.*"%>
+    <%@ page import="java.util.*"%>
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<!--  Meta Data -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<!--  Bootstrap CSS -->
+<!-- Latest compiled and minified CSS -->
+<link rel="stylesheet"
+	href="//netdna.bootstrapcdn.com/bootstrap/3.0.2/css/bootstrap.min.css">
+
+<!--  Optional theme -->
+<link rel="stylesheet"
+	href="//netdna.bootstrapcdn.com/bootstrap/3.0.2/css/bootstrap-theme.min.css">
+
+<!-- Latest compiled and minified JavaScript  -->
+<script
+	src="//netdna.bootstrapcdn.com/bootstrap/3.0.2/js/bootstrap.min.js"></script>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<title>Create a Quiz Challenge</title>
+</head>
+<body>
+<%@include file="refNavbar.jsp" %>
+	<div class="jumbotron">
+        <div class="container">
+
+<% SystemManager sm= (SystemManager)application.getAttribute("sm");
+QuizManager qm = sm.getQuizManager(); 
+ArrayList<Quiz> allQuizzes = qm.getAllQuizzes();
+User user = (User)session.getAttribute("signedInUser"); 
+ArrayList<User> friendList=user.getFriendList();
+if(friendList.size()==0) {
+	%>I'm sorry. It looks like you do not have any friends right now. 
+	<a href="createFriendRequest.jsp"> Send a Friend Request</a> <% 
+}
+
+
+else if(allQuizzes.size()>0) {
+%>
+
+
+Friend's User Name:
+<form action="CreateQuizChallengeServlet" method="post">
+<select name="receiverName">
+
+
+<% for(int i=0; i<friendList.size(); i++) { 
+		String friendUserName=friendList.get(i).getUserName();%>
+		<option value= "<%= friendUserName %>"> <%=friendUserName %> </option><%} 
+%>
+</select>
+
+ Message <input type="text" name="text"> <br />
+ Quiz <select name="quizName">
+<% for(int i=0; i<allQuizzes.size(); i++) { 
+		String quizName=allQuizzes.get(i).getName();%>
+		
+		<option value= "<%= quizName %>"> <%=quizName %> </option>
+		<%} 
+%>
+</select>
+ 
+
+<br />
+<input type="submit" class="btn btn-primary btn-lg"
+	value="Send &raquo;"></form>
+	<% } else {
+		
+		%> I'm sorry, there are no quizzes at this time.
+		<a href="createMessage.jsp"> Create a Message</a>
+		<a href="createQuiz0.jsp"> Create a Quiz</a>
+		
+		
+		
+		
+<% 	}
+		%>
+	
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,163 @@
+package quiz_system.test;
+
+import static org.junit.Assert.assertEquals;
+
+import java.security.NoSuchAlgorithmException;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
+import quiz_system.Quiz;
+import quiz_system.QuizCategory;
+import quiz_system.QuizManager;
+import system.SystemManager;
+import user.UserManager;
+
+import com.mysql.jdbc.Connection;
+import com.mysql.jdbc.Statement;
+
+
+public class QuizManagerTest {
+	
+	/*-------------------------- CONSTANTS ---------------------------------------------*/
+	public static final int NUM_USERS = 1;
+	public static final int NUM_QUIZZES = 1;
+	/*-------------------------- END CONSTANTS -----------------------------------------*/
+	
+	
+	/*-------------------------- PRIVATE INSTANCE VARIABLES ----------------------------*/
+	private SystemManager sm;
+	private UserManager um;
+	private QuizManager qm;
+	
+	private Connection con;
+	private ResultSet rs;
+	private Statement state;	
+	/*-------------------------- END PRIVATE INSTANCE VARIABLES ------------------------*/
+	
+	
+	/*-------------------------- INITIALIZATION/DESTRUCTION FUNCTIONS ------------------*/
+	@Before
+	public void initializeTests() throws SQLException{
+		System.out.println("Start Quiz Manager Test");
+		System.out.println("Initialization Sequence");
+
+		
+		sm = new SystemManager();
+		um = sm.getUserManager();
+		qm = sm.getQuizManager();
+		
+		addUsers();
+		addQuizzes();
+		System.out.println("End Initialization Sequence\n");
+	}
+	
+	
+	@After
+	public void destroyTests() throws SQLException{
+		
+		System.out.println("\nEnding Sequence");
+		sm.deleteEverything();
+		sm.closeDatabaseConnection();
+		System.out.println("End Quiz Manager Test");
+	}	
+	
+	private void addUsers(){
+		try{
+			for(int index = 0; index<NUM_USERS; index++){
+				um.createUser(TestConstants.TEST_USER_NAME.get(index),
+						TestConstants.TEST_USER_PASSWORD.get(index));
+			}
+		}catch(SQLException ex){
+			ex.printStackTrace();
+		} catch (NoSuchAlgorithmException ex) {
+			ex.printStackTrace();
+		}
+	}
+	
+	private void addQuizzes() throws SQLException{
+		for(int user = 0; user<NUM_USERS; user++){
+			String username = TestConstants.TEST_USER_NAME.get(user);
+			addQuizzesForUser(username);
+		}
+	}
+	
+	private void addQuizzesForUser(String username) throws SQLException{
+		for(int quiz = 0; quiz<NUM_QUIZZES; quiz++){
+			String quizName = username + TestConstants.TEST_QUIZ_NAME.get(quiz);
+			QuizCategory category = TestConstants.TEST_QUIZ_CATEGORY.get(quiz);
+			boolean onePage = TestConstants.TEST_QUIZ_ONEPAGE.get(quiz);
+			boolean practice = TestConstants.TEST_QUIZ_PRACTICE.get(quiz);
+			String description = TestConstants.TEST_QUIZ_DESCRIPTION.get(quiz);
+			boolean timed = TestConstants.TEST_QUIZ_TIMED.get(quiz);
+			boolean randomized = TestConstants.TEST_QUIZ_RANDOMIZED.get(quiz);
+			boolean ordered = TestConstants.TEST_QUIZ_ORDERED.get(quiz);
+			
+			Quiz q = qm.createAndAddQuiz(category, quizName, um.getExistingUser(username));
+		
+			q.setCategory(category);
+			q.setOnePage(onePage);
+			q.setPracticeEnabled(practice);
+			q.setDescription(description);
+			q.setTimed(timed);
+			q.setRandomized(randomized);
+		}	
+	}
+	/*-------------------------- INITIALIZATION/DESTRUCTION FUNCTIONS ------------------*/
+	
+	
+	/*-------------------------- TEST FUNCTIONS ----------------------------------------*/
+	@Test 
+	public void testRemoveQuiz(){
+		String username = TestConstants.TEST_USER_NAME.get(0);
+		String quizName = username + TestConstants.TEST_QUIZ_NAME.get(0);
+	
+		Quiz q = qm.getQuiz(quizName);
+		
+		assertEquals(qm.isQuizNameTaken(quizName), true);
+		
+		qm.removeQuiz(q);
+		
+		assertEquals(qm.isQuizNameTaken(quizName), false);
+		
+		q = qm.getQuiz(quizName);
+		
+		assertEquals(q, null);
+		
+	}
+	
+	/*
+	@Test 
+	public void testRemoveAllQuizzes(){
+		
+	}
+	
+	@Test
+	public void testGetQuiz(){
+		
+	}
+	
+	@Test
+	public void testGetQuizesCreatedByUser(){
+		
+	}
+	
+	@Test
+	public void testGetNumQuizzes(){
+		
+	}
+	
+	@Test
+	public void testRemoveUser(){
+		
+	}
+	*/
+	/*-------------------------- END TEST FUNCTIONS ------------------------------------*/
+	
+
+	
+
+}

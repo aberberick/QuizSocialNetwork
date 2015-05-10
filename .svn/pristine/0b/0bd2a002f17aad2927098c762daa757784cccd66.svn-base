@@ -1,0 +1,254 @@
+package servlets;
+
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+
+import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import quiz_system.FillInBlankQ;
+import quiz_system.MatchingQ;
+import quiz_system.MultipleAnswerQ;
+import quiz_system.MultipleChoiceAnswerQ;
+import quiz_system.MultipleChoiceQ;
+import quiz_system.PictureResponseQ;
+import quiz_system.Question;
+import quiz_system.QuestionType;
+import quiz_system.Quiz;
+import quiz_system.QuizManager;
+import quiz_system.QuizScore;
+import quiz_system.ResponseQ;
+
+import system.SystemManager;
+import user.Achievement;
+import user.User;
+import user.UserManager;
+
+/**
+ * Servlet implementation class QuizEvalServlet
+ */
+@WebServlet("/QuizEvalServlet")
+public class QuizEvalServlet extends HttpServlet {
+	private static final long serialVersionUID = 1L;
+       
+    /**
+     * @see HttpServlet#HttpServlet()
+     */
+    public QuizEvalServlet() {
+        super();
+        // TODO Auto-generated constructor stub
+    }
+
+	/**
+	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
+	 */
+	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		// TODO Auto-generated method stub
+	}
+
+	/**
+	 * @see HttpServlet#doPost(HttpServletRequest request, HttpServletResponse response)
+	 */
+	@SuppressWarnings("unchecked")
+	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		// system objects
+		ServletContext context=request.getServletContext();
+		HttpSession session=request.getSession();
+		SystemManager sm= (SystemManager)context.getAttribute("sm");
+		UserManager userManager = sm.getUserManager();
+		PrintWriter out = response.getWriter();
+
+		
+		long timeStart = (Long) session.getAttribute("timeStart");
+		long timeEnd = System.currentTimeMillis();
+
+		User signedInUser = (User)session.getAttribute("signedInUser"); 
+		
+		QuizManager qm = sm.getQuizManager();
+		UserManager um =sm.getUserManager();
+		
+		
+		// first get the quizname
+		String quizName = request.getParameter("quizName");
+		double qrating = Double.parseDouble(request.getParameter("qrating"));
+
+		// then get the quiz object
+		Quiz q = qm.getQuiz(quizName);
+		q.setTakerRating(signedInUser, qrating);
+		
+		boolean timed = q.isTimed();
+		boolean randomized = q.isRandomized();
+		boolean multiPage = !q.isOnePage();
+		boolean practiceEnabled = q.isPracticeEnabled();
+		boolean immediateCorrectionEnabled = q.isCorrectedImmediatley();
+		
+		boolean userWantsPractice = false;
+		if (multiPage && q.getAllQuestions().size() != 1) {
+			userWantsPractice = (Boolean) session.getAttribute("userWantsPractice");
+		}
+		else 
+			userWantsPractice = (request.getParameter("userWantsPractice") != null);
+		
+		// then get all the answers
+		ArrayList<Question> questions = q.getAllQuestions();
+		if (q.isRandomized()) {
+			questions = (ArrayList<Question>) session.getAttribute("randomizedArray"); 
+		}
+		
+		
+		int score = 0;
+		if (multiPage) {
+			score += (Integer) session.getAttribute("score");
+		}
+
+		// get each question object, and then compare the answers
+		for (int i = 0; i < questions.size(); i++) {
+			QuestionType qType = questions.get(i).getQuestionType();
+			if (qType.equals(QuestionType.RESPONSE)) {
+				ResponseQ que = (ResponseQ) questions.get(i);
+				// one answer
+				String guess = request.getParameter("guess" + i + "0");
+				if (que.isSolution(guess)) {
+					score++;
+				}
+			}
+			else if (qType.equals(QuestionType.FILL_IN_THE_BLANK)) {
+				FillInBlankQ que = (FillInBlankQ) questions.get(i);
+				// one answer
+				String guess = request.getParameter("guess" + i + "0");
+				if (que.isSolution(guess)) {
+					score++;
+				}
+			}
+			else if (qType.equals(QuestionType.PICTURE_RESPONSE)) {
+				PictureResponseQ que = (PictureResponseQ) questions.get(i);
+				// one answer
+				String guess = request.getParameter("guess" + i + "0");
+				if (que.isSolution(guess)) {
+					score++;
+				}
+			}
+			else if (qType.equals(QuestionType.MULTIPLE_CHOICE)) {
+				MultipleChoiceQ que = (MultipleChoiceQ) questions.get(i);
+				// one answer
+				String guess = request.getParameter("guess" + i + "0");
+				if (que.isCorrectSolution(guess)) {
+					score++;
+				}
+			}
+			else if (qType.equals(QuestionType.MULTIPLE_ANSWER)) {
+				MultipleAnswerQ que = (MultipleAnswerQ) questions.get(i);
+				// multi answer
+				HashSet<String> solns = que.getSolutions();
+				boolean ordered = que.isOrdered();
+				for (int j = 0; j < solns.size(); j++) {
+					String guess = request.getParameter("guess" + i + j);
+					if (ordered) {
+						// order number is j. (0 -> numSolns-1)
+						if (que.isSolution(j, guess)) {
+							score++;
+						}
+					}
+					else {
+						if (que.isSolution(guess)) {
+							score++;
+						}
+					}
+				}
+			}
+			else if (qType.equals(QuestionType.MULTIPLE_CHOICE_ANSWER)) {
+				MultipleChoiceAnswerQ que = (MultipleChoiceAnswerQ) questions.get(i);
+				HashSet<String> choices = que.getChoices();
+				HashSet<String> solns = que.getSolutions();
+				HashSet<String> guesses = new HashSet<String>();
+				for (int j = 0; j < choices.size(); j++) {
+					String guess = request.getParameter("guess" + i + j);
+					if (guess != null)
+						guesses.add(guess);
+				}
+				int countRight = 0;
+				for (String guess : guesses) {
+					if (solns.contains(guess)) {
+						countRight++;
+					}
+					else
+						countRight--;
+				}
+				score += (countRight > 0) ? countRight : 0;
+			}
+			else if (qType.equals(QuestionType.MATCHING)) {
+				MatchingQ que = (MatchingQ) questions.get(i);
+				// get the matches they enter
+				HashMap<String, String> matches = (HashMap<String, String>)que.getMatches(2);
+				for (int j = 0; j < matches.size(); j++ ) {
+					String guess = request.getParameter("guess" + i + j);
+					String pairing = matches.get(guess);
+					out.write("trying to match" + guess + " and " + pairing);
+					if (que.isMatch(pairing, guess)) {
+						score++;
+					}
+				}
+			}
+
+		}
+		
+		QuizScore qs = null;
+		// compute a score, make a new quiz result.
+		if (!userWantsPractice) {
+			long totalTime = timeEnd - timeStart;
+			qs = new QuizScore(score, totalTime, signedInUser);
+			q.addScore(qs);
+			session.setAttribute("quizScore", qs);
+		}
+		else {
+			session.setAttribute("score", score);
+		}
+		
+		// Achievements
+		ArrayList<Quiz> quizzesTaken;
+		ArrayList<Achievement> as;
+		try {
+			quizzesTaken = signedInUser.getTakenQuizes();
+			as = signedInUser.getAchievements();
+			int numTaken = quizzesTaken.size(); 
+			if (numTaken == 10 && !as.contains(Achievement.QUIZ_MACHINE)) {
+				signedInUser.addAchievement(Achievement.QUIZ_MACHINE);
+			}
+			if (userWantsPractice && !as.contains(Achievement.PRACTICE_MAKES_PERFECT)) {
+				signedInUser.addAchievement(Achievement.PRACTICE_MAKES_PERFECT);
+			}
+			QuizScore maxScore = q.getHighScore();
+			if (score > maxScore.getScore() && !as.contains(Achievement.I_AM_THE_GREATEST)) {
+				signedInUser.addAchievement(Achievement.I_AM_THE_GREATEST);
+			}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();			
+		}
+		
+		// REDIRECT TO quizScore.jsp (mainly for multiple page fixes)
+		if (userWantsPractice) {	
+				session.setAttribute("score", score);
+				session.setAttribute("timeElapsed", timeEnd - timeStart);
+		        session.setAttribute("userWantsPractice", true);
+		}
+		else {
+				out.write("problems?");
+				session.setAttribute("quizScore", qs);
+		        session.setAttribute("timeElapsed", qs.getTimeToComplete());
+		        session.setAttribute("userWantsPractice", false);
+		}
+		RequestDispatcher dispatch = request.getRequestDispatcher("quizScore.jsp?quizName=" + q.getName() + "&userName=" + signedInUser.getUserName()); 
+		dispatch.forward(request, response); 	
+	}
+}

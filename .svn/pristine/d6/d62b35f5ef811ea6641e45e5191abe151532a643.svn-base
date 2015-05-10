@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+<title>TST Quiz Website Homepage</title>
+<%@include file="refBootstrap.jsp" %>
+</head>
+
+<body>
+<%@include file="imports.jsp" %>
+<%@include file="refNavbar.jsp" %>
+<%@include file="topContainer.jsp" %>
+    <div class="jumbotron">
+        <div class="container">
+
+     
+     <%
+     // INIT
+    SystemManager sm = (SystemManager)application.getAttribute("sm");
+    
+//  User user = (User)session.getAttribute("signedInUser"); 
+    String userName = (String)session.getAttribute("signedInUserName"); 
+    
+    Mailman mailMan=sm.getMailman();
+    QuizManager qm =sm.getQuizManager();
+    UserManager um =sm.getUserManager();
+    User user =um.getExistingUser(userName);
+    int numFriendRequests=mailMan.getFriendRequests(user).size();
+    int numChallengeRequests=mailMan.getChallengeRequests(user).size();
+    int numTextMessages=mailMan.getTextMessages(user).size();
+    int numMessages = numFriendRequests + numChallengeRequests + numTextMessages;
+    
+    QuizManager quizManager=sm.getQuizManager();
+    long currentTime=System.currentTimeMillis();
+    ArrayList<Quiz> recentQuizzes= quizManager.getRecentlyCreatedQuizzes(currentTime);
+    ArrayList<Quiz> popularQuizzes= quizManager.getMostPopularQuizzes(currentTime);
+    ArrayList<Quiz> recentlyMadeQuizzesUser = qm.getQuizzesCreatedByUser(user);
+    ArrayList<User> friendList=user.getFriendList();
+    
+    int numToPrint = 10;
+	%>
+
+	<h1><%=user.username %>'s  Home </h1>
+	</div>
+	</div>
+	
+	<div id="userdiv" style ='background-color: #E5E4E2'>
+	   <h2>Other Users  </h2>
+	   <ul>
+	   <li><a href="allUsers.jsp">View All Users</a></li>
+	   <li><a href="friends.jsp">View All Friends</a></li>
+	   </ul>
+	   
+	   
+	   <!--  DISPLAY quiz name, friend creator, date created --> 
+	   <h3>Recent Quizzes created by Friends</h3>
+	   <% 
+	   ArrayList<Quiz> quizzes = new ArrayList<Quiz>();
+	   for (User friend : friendList) {
+		   quizzes.addAll(qm.getQuizzesCreatedByUser(friend));
+	   }
+	   
+	   quizzes = Quiz.orderByDateCreated(quizzes);
+	   out.write(Quiz.getHTML(quizzes,numToPrint));
+	   %>
+	   
+	   <!--  QUIZZES TAKEN quiz name, quiz score data, friend taker-->
+	   <h3>Quizzes Recently Taken by Friends</h3>
+	          <% 
+	   ArrayList<QuizScore> quizzesTakenScores = new ArrayList<QuizScore>();
+	   for (User friend : friendList) {
+           ArrayList<Quiz> quizzesTaken = qm.getQuizzesTakenByUser(friend);
+           for (Quiz q : quizzesTaken) {
+               quizzesTakenScores.addAll(q.getScores(friend));
+           }
+       }
+       out.write(QuizScore.getHTML(quizzesTakenScores,numToPrint));
+       %>	   
+	</div>
+	<hr />
+	
+	      <!--  MESSAGES DIV-->
+	
+	   <div id="messagesdiv">
+	   <h2>Messages</h2>
+	   <h3><a href="inbox.jsp"> Inbox (<%=numMessages %>)</a></h3>
+	   <h3>Administrator Announcements</h3>
+	   <% ArrayList<Announcement> announcements = mailMan.getAnnouncements();
+	   for (Announcement a : announcements) {
+		   out.write("<p>" + a.textMessage + " (" + a.getDate() + ")</p>");
+	   }
+	   %>
+	   </div>
+	   <hr />
+	   
+	   
+	      <!--  ACHIEVEMENTS DIV-->
+	   <div id="achievementsdiv" style ='background-color: #E5E4E2'>
+	   
+	   <h2>My Achievements</h2>
+       <% ArrayList<Achievement> achievements = user.getAchievements();
+       for (Achievement a : achievements) {
+           out.write("<p>" + a.title + " (" + a.description + ")</p>");
+       }
+       %>
+	   </div>
+	       <hr />
+	   
+	   
+	   <!--  QUIZZES DIV-->
+       <div id="quizzesdiv">
+       
+       <h2>Quizzes</h2>
+           <a href="createQuiz0.jsp" class="btn btn-lg btn-primary">Create a Quiz &raquo;</a>
+		   <a href="allQuizzes.jsp" class="btn btn-lg btn-primary">View All Quizzes &raquo;</a>
+		   <a href="quizSearch.jsp" class="btn btn-lg btn-primary">Search All Quizzes &raquo;</a>
+	    <h3>Recent Quizzes Created</h3>   
+	   <%
+	   ArrayList<Quiz> quizzes1 = qm.getAllQuizzes();
+	   quizzes1 = Quiz.orderByDateCreated(quizzes1);
+	   out.write(Quiz.getHTML(quizzes1,numToPrint));
+	   %>
+	   
+	   <h3>Popular Quizzes Taken</h3>
+	   <%
+       ArrayList<Quiz> quizzes2 = qm.getMostPopularQuizzes(TimeConstants.HUNDRED_YEARS);
+	   out.write(Quiz.getHTML(quizzes2,numToPrint));
+       %>
+	   
+	   <h3>Quizzes I've Created</h3>
+	    <%
+       ArrayList<Quiz> quizzes3 = qm.getQuizzesCreatedByUser(user);
+	   out.write(Quiz.getHTML(quizzes3,numToPrint));
+       %>
+
+	   <h3>Quizzes I've Taken</h3>
+	    <%
+       ArrayList<Quiz> quizzes4 = qm.getQuizzesTakenByUser(user);
+	   out.write(Quiz.getHTML(quizzes4,numToPrint));
+       %>	   
+	   </div>
+	   <hr />
+	   
+	   
+	   <!-- ACCOUNT DIV -->
+	   <div id="accountdiv" style ='background-color: #E5E4E2'>
+	   <h2>Account Status</h2>
+	   <p>
+	   
+	   <!-- Public v Private -->
+	   <% 	   
+	    if(!user.isPrivate()) {%>
+	    <form action="SetUserPrivateServlet" method="post">
+	    <input class="btn btn-large btn-primary" type="Submit" value= "Set Account as Private" />
+	    </form>
+	    <%} else { %>
+	    <form action="SetUserPublicServlet" method="post">
+	    <input class="btn btn-large btn-primary" type="Submit" value= "Set Account as Public" />
+	    </form>
+	    <%} %>
+	    </p>
+	    
+	    
+	    <!-- BECOME ADMIN -->
+	    <p>
+	       <% if(!user.isAdmin()) { %>
+	    <form action="CreateAdminServlet" method="post">
+	
+	    <input class="btn btn-large btn-primary" type="Submit" value= "Become an Administrator" />
+	    <input name="name" type="hidden" value="<%=user.getUserName() %>"/> 
+	    </form>
+      <% } else {
+    	  %><a href="admin.jsp"> View Administrator Page</a>
+      
+      <% } %>
+      <br />
+      <a href="userHistory.jsp?userName=<%= user.getUserName() %>&takenQuiz=default&createdQuiz=default">View User History</a>
+	   </div>
+	       <hr />
+</body>
+</html>

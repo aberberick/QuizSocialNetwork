@@ -1,0 +1,42 @@
+package quiz_system.test;
+
+import java.sql.SQLException;
+
+import message.Mailman;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
+import quiz_system.QuizManager;
+import user.UserManager;
+import database.DBConnection;
+
+
+public class QuizManagerTest {
+	private DBConnection db;
+	private UserManager um;
+	private Mailman mm;
+	private QuizManager qm;
+	
+	
+	@Before
+	public void initializeTests() throws SQLException{
+			db = new DBConnection();
+    		um = new UserManager(db, null, null);
+    		mm = new Mailman(db, um, null);
+    		qm= new QuizManager(db.getDBConnection(), um);
+    		um.setAttributes(mm, qm);
+    		mm.setAttributes(qm);
+	}
+	
+	@Test
+	public void testQuizManagerCreate(){
+		assert(qm.getNumQuizzes() == 0);
+	}
+	
+	@After
+	public void destroyTests() throws SQLException{
+		db.closeConection();
+	}
+}

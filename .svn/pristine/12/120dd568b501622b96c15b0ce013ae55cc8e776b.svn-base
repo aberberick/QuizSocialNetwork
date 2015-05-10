@@ -1,0 +1,26 @@
+package message;
+
+import java.sql.SQLException;
+
+import user.*;
+
+
+public class FriendRequest extends Message {
+
+	
+
+	
+	
+	public FriendRequest(User sender, User receiver, String textMessage) {
+		super(sender, receiver, textMessage);
+		
+		
+	}
+	
+	
+	public void confirmFriend() throws SQLException{
+		sender.addFriend(receiver.getUserName());
+		receiver.addFriend(sender.getUserName());
+	}
+
+}

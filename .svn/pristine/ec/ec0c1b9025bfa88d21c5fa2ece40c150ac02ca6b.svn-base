@@ -1,0 +1,30 @@
+package message;
+
+import user.User;
+import quiz_system.Quiz;
+import quiz_system.QuizScore;
+
+public class ChallengeRequest extends Message{
+	
+	public Quiz quiz;
+	public QuizScore highScore;
+	
+	
+	public ChallengeRequest(User sender, User receiver, String textMessage, Quiz quiz) {
+		super(sender, receiver, textMessage);
+		this.quiz=quiz;
+		highScore=quiz.getHighScore(sender);
+		
+		
+	}
+	
+	
+	public QuizScore challengerHighScore(){
+		return highScore;
+	}
+	
+	
+	
+	
+
+}

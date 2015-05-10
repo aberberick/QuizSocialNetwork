@@ -1,0 +1,58 @@
+package system;
+
+import java.sql.SQLException;
+
+import message.Mailman;
+import quiz_system.QuizManager;
+import user.UserManager;
+import database.DBConnection;
+
+public class SystemManager extends Object{
+
+	/*-------------------------- CONSTANTS ---------------------------------------------*/
+
+	/*-------------------------- END CONSTANTS -----------------------------------------*/
+	
+	/*-------------------------- PRIVATE INSTANCE VARIABLES ----------------------------*/
+	private DBConnection db;
+	private UserManager um;
+	private QuizManager qm;
+	private Mailman mm;
+	/*-------------------------- END PRIVATE INSTANCE VARIABLES ------------------------*/
+	
+	
+	/*-------------------------- CONSTRUCTOR -------------------------------------------*/
+	public SystemManager() throws SQLException{
+		db = new DBConnection();
+		um = new UserManager(db, null, null);
+		mm = new Mailman(db, um, null);
+		qm= new QuizManager(db.getDBConnection(), um);
+		um.setAttributes(mm, qm);
+		mm.setAttributes(qm);
+	}
+	/*-------------------------- END CONSTRUCTOR ---------------------------------------*/
+	
+	
+	/*-------------------------- PUBLIC GETTERS/SETTERS  -------------------------------*/
+	public UserManager getUserManager(){
+		return um;
+	}
+	public QuizManager getQuizManager(){
+		return qm;
+	}
+	public Mailman getMailman(){
+		return mm;
+	}
+	/*-------------------------- END PUBLIC GETTERS/ SETTERS ---------------------------*/
+	
+	
+	/*-------------------------- DELETION FUNCTIONS ------------------------------------*/
+	public void deleteEverything() throws SQLException{
+		um.deleteEverything();
+	}
+	
+	public void closeDatabaseConnection() throws SQLException{
+		db.closeConection();
+	}
+	/*-------------------------- END DELETION FUNCTIONS --------------------------------*/
+}

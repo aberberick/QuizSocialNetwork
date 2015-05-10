@@ -1,0 +1,114 @@
+<%@ page language="java" contentType="text/html; charset=ISO-8859-1"
+	pageEncoding="ISO-8859-1"%>
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+
+<title>Profile Page</title>
+<%@ page import="user.*"%>
+
+<%@ page import="message.Mailman"%>
+<%@ page import="message.FriendRequest"%>
+<%@ page import="system.SystemManager"%>
+<%@ page import="quiz_system.*"%>
+<%@ page import="java.util.*"%>
+
+<!--  Meta Data -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<!--  Bootstrap CSS -->
+<!-- Latest compiled and minified CSS -->
+<link rel="stylesheet"
+	href="//netdna.bootstrapcdn.com/bootstrap/3.0.2/css/bootstrap.min.css">
+
+<!--  Optional theme -->
+<link rel="stylesheet"
+	href="//netdna.bootstrapcdn.com/bootstrap/3.0.2/css/bootstrap-theme.min.css">
+
+<!-- Latest compiled and minified JavaScript  -->
+<script
+	src="//netdna.bootstrapcdn.com/bootstrap/3.0.2/js/bootstrap.min.js"></script>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+</head>
+<body>
+<%@include file="refNavbar.jsp" %>
+	<div class="jumbotron">
+        <div class="container">
+<% 
+	User signedInUser = (User)session.getAttribute("signedInUser"); 
+	
+	SystemManager sm= (SystemManager)application.getAttribute("sm");
+	QuizManager qm = sm.getQuizManager();
+	UserManager um =sm.getUserManager();
+	
+	
+	String name=request.getParameter("name");
+	User user = um.getExistingUser(name);
+	ArrayList<Achievement> achievements = user.getAchievements();
+	ArrayList<Quiz> quizzesTaken = user.getTakenQuizes();
+	ArrayList<Quiz> quizzesCreated = user.getCreatedQuizes();
+	ArrayList<User> friendList=user.getFriendList();
+%>
+
+<p> Username: 
+
+<%=name %>
+</p>
+
+<% if(signedInUser.isAdmin()) {%>
+	<form action="RemoveUserServlet" method="post">
+	<input name="userName" type="hidden" value="<%=name %>"/> 
+	<input type="Submit" value= "Delete User" />
+
+	</form>
+	
+	<%
+}%>
+<%if((!friendList.contains(signedInUser)) &&  (!user.equals(signedInUser))) { %>
+
+<form action="CreateFriendRequestServlet" method="post">
+<input name="friendUserName" type="hidden" value="<%=name %>"/> 
+<input type="Submit" value= "Add as a Friend" />
+
+</form>
+<br>
+<%} 
+if(!user.isPrivate() || user.equals(signedInUser)) {%>
+
+
+
+Achievements (<%=achievements.size() %>):
+
+<ul>
+<% for(int i=0; i<achievements.size(); i++) {
+	%> <li> <%=achievements.get(i).title %>:  <%=achievements.get(i).description %> <%
+}
+
+%>
+</ul>
+
+<br>
+Quizzes Taken (<%=quizzesTaken.size() %>):
+
+<ul>
+<% for(int i=0; i<quizzesTaken.size(); i++) {
+	Quiz quiz = quizzesTaken.get(i);
+	ArrayList<QuizScore> scores = quiz.getMostRecentScores(user);
+	QuizScore score = scores.get(0);
+	%><li> <%=quiz.getName() %>:  score: <%=score.getScore() %> Time: <%=score.getTimeToComplete()
+	%> Date: <%=score.getDateTaken() %>
+	
+	
+	 <%
+}
+}
+%>
+</ul>
+
+</div>
+</div>
+
+</body>
+</html>

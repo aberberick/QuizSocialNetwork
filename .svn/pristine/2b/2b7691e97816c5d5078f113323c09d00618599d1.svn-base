@@ -1,0 +1,42 @@
+<%@ page language="java" contentType="text/html; charset=ISO-8859-1"
+    pageEncoding="ISO-8859-1"%>
+    <%@ page import="user.User"%>
+    <%@ page import="java.util.*"%>
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<title>Create a Message!</title>
+</head>
+<body>
+<%@include file="refNavbar.jsp" %>
+	<div class="jumbotron">
+        <div class="container">
+<h1> Create a Message</h1>
+
+<% User user = (User)session.getAttribute("signedInUser"); 
+	ArrayList<User> friendList=user.getFriendList();
+
+%>
+<form action="CreateMessageServlet" method="post">
+<select name="receiverName">
+<% for(int i=0; i<friendList.size(); i++) { 
+		String friendUserName=friendList.get(i).getUserName();%>
+		<option value= "<%= friendUserName %>"> <%=friendUserName %> </option><!--
+	%><input type="checkbox" name="recieverName" value="<%=friendUserName %>"> <%=friendUserName %>
+
+--><%} 
+%>
+</select>
+
+
+<textarea rows="10" cols="30" >
+</textarea>
+<center><input type="Submit" value="Send Message" /></center>
+</form>
+
+</div>
+</div>
+
+</body>
+</html>

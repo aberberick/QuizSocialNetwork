@@ -1,0 +1,62 @@
+package quiz_system;
+
+import java.util.HashSet;
+
+import com.mysql.jdbc.Connection;
+
+public class MultipleChoiceAnswerQ extends Question{
+	
+	/*
+	 * Note:
+	 * Choice Table - holds all multiple choice question choices
+	 * Solutions Table: Solutions Column - holds all correct choices
+	 */
+	
+	/*-------------------------- CONSTRUCTOR -------------------------------------------*/
+	protected MultipleChoiceAnswerQ(Connection connection, String questionName, String parentQuizName) {
+		super(connection, questionName, QuestionType.MULTIPLE_CHOICE_ANSWER, parentQuizName);
+	}
+	/*-------------------------- END CONSTRUCTOR ---------------------------------------*/
+	
+	
+	/*-------------------------- PUBLIC FUNCTIONS --------------------------------------*/
+	public void addChoice(String choice){
+		/*
+		 * TODO:
+		 */
+	}
+	public void addChoices(HashSet<String> choices){
+		/*
+		 * TODO:
+		 */
+	}
+	public HashSet<String> getChoices(){
+		/*
+		 * TODO:
+		 */
+		return null;
+	}
+	public void addSolution(String choice){
+		/*
+		 * TODO:
+		 */
+	}
+	public boolean isSolution(HashSet<String> correctChoices){
+		/*
+		 * TODO:
+		 */
+		return true;
+	}
+	public void setSolutions(HashSet<String> correctChoices){
+		/*
+		 * TODO:
+		 */
+	}
+	public HashSet<String> getSolutions(){
+		/*
+		 * 
+		 */
+		return null;
+	}
+	/*-------------------------- END PUBLIC FUNCTIONS ----------------------------------*/
+}

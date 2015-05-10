@@ -1,0 +1,84 @@
+package message;
+
+import user.User;
+
+public class Announcement implements Comparable{
+
+	public String date;
+	public User sender;
+	public String textMessage;
+	protected int idCount;
+	
+	public Announcement(User sender, String textMessage) {
+		this.sender=sender;
+		this.textMessage=textMessage;
+		
+		
+	}
+	
+	public String getDate(){
+		return date;
+	}
+	
+	protected void setID(int num){
+		idCount=num;
+	}
+	
+	protected int getID(){
+		return idCount;
+	}
+
+	/* (non-Javadoc)
+	 * @see java.lang.Object#toString()
+	 */
+	@Override
+	public String toString() {
+		return "Announcement [date=" + date + ", sender=" + sender
+				+ ", textMessage=" + textMessage + ", idCount=" + idCount + "]";
+	}
+
+	/* (non-Javadoc)
+	 * @see java.lang.Object#hashCode()
+	 */
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((date == null) ? 0 : date.hashCode());
+		result = prime * result + idCount;
+		return result;
+	}
+
+	/* (non-Javadoc)
+	 * @see java.lang.Object#equals(java.lang.Object)
+	 */
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		Announcement other = (Announcement) obj;
+		if (date == null) {
+			if (other.date != null)
+				return false;
+		} else if (!date.equals(other.date))
+			return false;
+		if (idCount != other.idCount)
+			return false;
+		return true;
+	}
+
+
+	@Override
+	public int compareTo(Object arg0) {
+		Announcement other = (Announcement)arg0;
+		if(other.idCount>this.idCount)return -1;
+		else if(this.idCount>other.idCount)return 1;
+		else return 0;
+	}
+
+	
+}
